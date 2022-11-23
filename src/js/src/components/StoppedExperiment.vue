@@ -179,7 +179,7 @@
               <b-table-column field="name" label="VM" sortable v-slot="props">
                 <template v-if="adminUser()">
                   <b-tooltip label="get info on the vm" type="is-dark">
-                    <div class="field">
+                    <div class="field is-clickable">
                       <div @click="expModal.active = true; expModal.vm = props.row">
                         {{ props.row.name }}
                       </div>

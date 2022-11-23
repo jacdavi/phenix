@@ -335,7 +335,7 @@
       <div class="level-item" v-if="experiment.scenario">
         <span style="font-weight: bold;">Scenario: {{ experiment.scenario }}</span>&nbsp;
       </div>
-      <div class="level-item" v-if="experiment.apps" @click="getApps()">
+      <div class="level-item is-clickable" v-if="experiment.apps" @click="getApps()">
         <span style="font-weight: bold;">Apps:</span>&nbsp;
         <b-taglist>
           <b-tag v-for="( a, index ) in experiment.apps" :key="index" type="is-light">
@@ -522,7 +522,7 @@
               <template v-if="experimentUser()">
                 <b-tooltip  label="start/stop/redeploy the vm" type="is-dark">
                   <span class="tag is-medium" :class="decorator( props.row.state, props.row.busy )">
-                    <div  class="field">
+                    <div  class="field is-clickable">
                       <div @click="getInfo( props.row )">
                         {{  props.row.name }}
                       </div>
@@ -600,7 +600,7 @@
               <template v-slot:default="props">
                 <template  v-if="experimentUser() && props.row.running && !props.row.busy"> 
                   <b-tooltip :label="updateCaptureLabel(props.row)" type="is-dark">
-                  <div class="field">
+                  <div class="field is-clickable">
                     <div  v-for="(ip,index) in props.row.ipv4"
                         :class="tapDecorator( props.row.captures, index )" 
                         :key="index" 
@@ -618,7 +618,7 @@
             <b-table-column field="network" label="Network" v-slot="props">
               <template v-if="experimentUser() && props.row.running && !props.row.busy">                  
                 <b-tooltip  label="change vlan(s)" type="is-dark">
-                  <div class="field">
+                  <div class="field is-clickable">
                     <div  v-for="( n, index ) in props.row.networks" 
                       :key="index" 
                       @click="vlanModal.active = true 
@@ -638,7 +638,7 @@
             <b-table-column field="taps"  label="Taps" v-slot="props">
               <template v-if="experimentUser() && props.row.running && !props.row.busy">
                 <b-tooltip  :label="updateCaptureLabel(props.row)" type="is-dark">
-                  <div class="field">
+                  <div class="field is-clickable">
                     <div  v-for="( t, index ) in props.row.taps" 
                       :class="tapDecorator( props.row.captures, index )" 
                       :key="index" 
@@ -688,7 +688,7 @@
             <b-table-column field="name" label="Name" sortable v-slot="props">
               <template v-if="props.row.plainText">
                 <b-tooltip label="view file" type="is-dark">
-                  <div class="field">
+                  <div class="field is-clickable">
                     <div @click="viewFile( props.row )">
                       {{ props.row.name }}
                     </div>

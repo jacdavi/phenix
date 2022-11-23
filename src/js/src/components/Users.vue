@@ -97,7 +97,7 @@
           <b-table-column field="username" label="User" sortable v-slot="props">
             <template v-if="adminUser()">
               <b-tooltip label="change user settings" type="is-dark">
-                <div class="field">
+                <div class="field is-clickable">
                   <div @click="editUser( props.row.username )">
                     {{ props.row.username }}
                   </div>

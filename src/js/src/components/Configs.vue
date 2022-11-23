@@ -212,7 +212,7 @@
           <b-table-column field="name" label="Name" width="400" sortable v-slot="props">
             <template v-if="adminUser()">
               <b-tooltip label="view config" type="is-dark">
-                <div class="field">
+                <div class="field is-clickable">
                   <div @click="viewConfig( props.row )">
                     {{ props.row.metadata.name }}
                   </div>

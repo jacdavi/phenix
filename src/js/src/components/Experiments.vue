@@ -143,7 +143,7 @@
             <template v-else-if="adminUser()">                
                 <b-tooltip :label="getExpControlLabel(props.row.name,props.row.status)" type="is-dark">
                   <span class="tag is-medium" :class="decorator( props.row.status )">
-                    <div class="field">
+                    <div class="field is-clickable">
                       <div class="field" @click="( props.row.running ) ? stop( props.row.name, props.row.status ) : start( props.row.name, props.row.status )">
                         {{ props.row.status }}
                       </div>

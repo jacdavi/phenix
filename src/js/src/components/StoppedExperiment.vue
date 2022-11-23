@@ -28,7 +28,7 @@
           <div v-for="( vlan, index ) in vlanModal.vlans" :key="index">
             <table>
               <tr>
-                <td style="width:50%"><font color="#202020">{{ vlan.alias }}</font></td>
+                <td style="width:50%">{{ vlan.alias }}</td>
                 <td><b-numberinput min="0" max="4094" type="is-light" size="is-small" controls-alignment="right" controls-position="compact" v-model=vlan.vlan /></td>
               </tr>
             </table>
@@ -128,7 +128,7 @@
               <b-icon icon="bars"></b-icon>
             </button>
             <b-dropdown-item v-for="( s, index ) in schedules" :key="index" :value="s" @click="updateSchedule">
-              <font color="#202020">{{ s }}</font>
+              {{ s }}
             </b-dropdown-item>
           </b-dropdown>
         </b-tooltip>

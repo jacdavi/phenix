@@ -129,9 +129,7 @@
         <p class="modal-card-title">Change the VLAN</p>
       </header>
       <section  class="modal-card-body">
-        <font color="#202020">
-          Move  interface {{ vlanModal.vmNetIndex }} from {{ vlanModal.vmFromNet | lowercase }} to a new one for the {{ vlanModal.active ? vlanModal.vmName : "unknown" }} VM.
-        </font>
+          Move interface {{ vlanModal.vmNetIndex }} from {{ vlanModal.vmFromNet | lowercase }} to a new one for the {{ vlanModal.active ? vlanModal.vmName : "unknown" }} VM.
         <br><br>
           <b-field>
             <b-select v-model="vlan" expanded>
@@ -161,58 +159,56 @@
           <div  v-if="redeployModal.vm.length > 0">
            <div v-for="(vmI,index)  in redeployModal.vm" :key="index">
              <div align="left">               
-               <font  color="#202020">
-                 <hr v-if="parseInt(index) > 0" style="color:#595959;background-color:#595959">
-                 Modify current settings and redeploy {{ vmI.name }}
-                 <br><br>
-                 CPUs: 
-                  <b-tooltip  label="menu for assigning cpus" type="is-dark">
-                    <b-select :value="vmI.cpus" expanded @input="( value ) => vmI.cpus = value">
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                      <option value="4">4</option>
-                      <option value="5">5</option>
-                      <option value="6">6</option>
-                      <option value="7">7</option>
-                      <option value="8">8</option>
-                    </b-select>
-                  </b-tooltip>
-                &nbsp;
-                Memory: 
-                 <b-tooltip label="menu for assigning memory" type="is-dark">
-                   <b-select  :value="vmI.ram" expanded @input="( value ) => vmI.ram = value">
-                     <option value="512">512 MB</option>
-                     <option value="1024">1 GB</option>
-                     <option value="2048">2 GB</option>
-                     <option value="3072">3 GB</option>
-                     <option value="4096">4 GB</option>
-                     <option value="8192">8 GB</option>
-                     <option value="12288">12 GB</option>
-                     <option value="16384">16 GB</option>
-                   </b-select>
-                 </b-tooltip>
+                <hr v-if="parseInt(index) > 0" style="color:#595959;background-color:#595959">
+                Modify current settings and redeploy {{ vmI.name }}
                 <br><br>
-                Disk:
-                <b-tooltip :label="getDiskToolTip(vmI.disk)" type="is-dark">
-                  <b-select :value="vmI.disk" @input="( value ) =>  vmI.disk = value">
-                    <option
-                      v-for="(  d, index ) in disks"
-                      :key="index"
-                      :value="d">
-                        {{ getBaseName(d) }}
-                    </option>
+                CPUs: 
+                <b-tooltip  label="menu for assigning cpus" type="is-dark">
+                  <b-select :value="vmI.cpus" expanded @input="( value ) => vmI.cpus = value">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
                   </b-select>
                 </b-tooltip>
-                <br><br>
-                Replicate Original Injection(s):
-                <b-tooltip label="menu for replicating injections" type="is-dark">
-                  <b-select :value="vmI.inject" expanded  @input="( value ) => vmI.inject = value">
-                    <option value="true">Yes</option>
-                    <option value="false">No</option>
+              &nbsp;
+              Memory: 
+                <b-tooltip label="menu for assigning memory" type="is-dark">
+                  <b-select  :value="vmI.ram" expanded @input="( value ) => vmI.ram = value">
+                    <option value="512">512 MB</option>
+                    <option value="1024">1 GB</option>
+                    <option value="2048">2 GB</option>
+                    <option value="3072">3 GB</option>
+                    <option value="4096">4 GB</option>
+                    <option value="8192">8 GB</option>
+                    <option value="12288">12 GB</option>
+                    <option value="16384">16 GB</option>
                   </b-select>
                 </b-tooltip>
-               </font>
+              <br><br>
+              Disk:
+              <b-tooltip :label="getDiskToolTip(vmI.disk)" type="is-dark">
+                <b-select :value="vmI.disk" @input="( value ) =>  vmI.disk = value">
+                  <option
+                    v-for="(  d, index ) in disks"
+                    :key="index"
+                    :value="d">
+                      {{ getBaseName(d) }}
+                  </option>
+                </b-select>
+              </b-tooltip>
+              <br><br>
+              Replicate Original Injection(s):
+              <b-tooltip label="menu for replicating injections" type="is-dark">
+                <b-select :value="vmI.inject" expanded  @input="( value ) => vmI.inject = value">
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </b-select>
+              </b-tooltip>
              </div> 
            </div>
           </div>
@@ -238,14 +234,12 @@
          <div v-if="diskImageModal.vm.length > 0">
               <div  v-for="(vmI,index) in diskImageModal.vm" :key="index">
                  <div align="left">             
-                  <font color="#202020">
-                    <hr v-if="parseInt(index) > 0" style="color:#595959;background-color:#595959">
-                        Create disk image of the {{ vmI.name }} VM with filename:                 
-                        <br><br>
-                        <b-field :type="vmI.nameErrType" :message="vmI.nameErrMsg" autofocus>
-                          <b-input  type="text" v-model="vmI.filename" focus></b-input>
-                         </b-field>
-                  </font>          
+                 <hr v-if="parseInt(index) > 0" style="color:#595959;background-color:#595959">
+                    Create disk image of the {{ vmI.name }} VM with filename:                 
+                    <br><br>
+                    <b-field :type="vmI.nameErrType" :message="vmI.nameErrMsg" autofocus>
+                      <b-input  type="text" v-model="vmI.filename" focus></b-input>
+                      </b-field>
                 </div>                                 
               </div>
           </div>
@@ -270,14 +264,12 @@
           <div v-if="memorySnapshotModal.vm.length > 0">             
             <div  v-for="(vmI,index) in memorySnapshotModal.vm" :key="index">
               <div align="left">                
-                  <font color="#202020">
-                    <hr v-if="parseInt(index) > 0" style="color:#595959;background-color:#595959">
-                        Create a memory snapshot for the {{ vmI.name }} VM with filename:                 
-                        <br><br>
-                        <b-field :type="vmI.nameErrType" :message="vmI.nameErrMsg" autofocus>
-                          <b-input  type="text" v-model="vmI.filename" focus></b-input>
-                        </b-field>
-                  </font>                  
+                  <hr v-if="parseInt(index) > 0" style="color:#595959;background-color:#595959">
+                      Create a memory snapshot for the {{ vmI.name }} VM with filename:                 
+                      <br><br>
+                      <b-field :type="vmI.nameErrType" :message="vmI.nameErrMsg" autofocus>
+                        <b-input  type="text" v-model="vmI.filename" focus></b-input>
+                      </b-field>
                 </div>                
             </div>
           </div>          
@@ -300,12 +292,12 @@
         </header>
         <section class="modal-card-body">
           <div v-if="appsModal.triggerable.length">
-            <b-checkbox v-for="( a, index ) in appsModal.triggerable" :key="index" :native-value="a" v-model="appsModal.apps" type="is-light" style="color:#202020">
+            <b-checkbox v-for="( a, index ) in appsModal.triggerable" :key="index" :native-value="a" v-model="appsModal.apps" type="is-light">
               {{ a }}
             </b-checkbox>
           </div>
           <div v-else>
-            <span style="color:#202020">This experiment doesn't include any triggerable apps.</span>
+            <span>This experiment doesn't include any triggerable apps.</span>
           </div>
         </section>
         <footer class="modal-card-foot buttons is-right">
@@ -465,7 +457,7 @@
             <template slot="empty">No results found</template>
           </b-autocomplete>
           <p  class='control'>
-            <button class='button' style="color:#686868" @click="searchVMs(''); filesTable.category = null">
+            <button class='button' @click="searchVMs(''); filesTable.category = null">
               <b-icon icon="window-close"></b-icon>
             </button>
           </p>

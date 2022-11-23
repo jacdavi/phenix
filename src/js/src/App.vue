@@ -154,10 +154,6 @@ clue what this stuff does.
     color: whitesmoke !important;
   }
   
-  p {
-    color: #202020;
-  }
-  
   ul {
     columns: 2;
     -webkit-columns: 2;
@@ -247,11 +243,17 @@ clue what this stuff does.
   // Import Bulma's core
   @import "~bulma/sass/utilities/_all";
 
-  $body-background-color: #333;
+  $scheme-main: #333;
+  $background: #484848;
   $table-background-color: #484848;
   
-  $button-text-color: whitesmoke;
+  $text: whitesmoke;
+  $text-strong: white;
 
+  $button-color: $grey-lightest;
+  $link-hover: white;
+  $link-focus: white;
+  $link-active: white;
 
   $breadcrumb-item-color: $info !important;
   $breadcrumb-item-active-color: $light-invert !important;

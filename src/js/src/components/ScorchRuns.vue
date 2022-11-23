@@ -377,7 +377,6 @@
   }
 
   .x-modal-dark >>> textarea {
-    background-color: #686868;
     color: whitesmoke;
   }
 

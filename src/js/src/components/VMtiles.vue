@@ -44,10 +44,10 @@ side will pass.
               Select Experiment
             </button>
             <b-dropdown-item @click="searchName = ''; exp = null">
-              <font color="#202020">All Experiments</font>
+              All Experiments
             </b-dropdown-item>
             <b-dropdown-item v-for="( e, index ) in experiments" :key="index" :value="e" @click="searchName = ''; exp = e">
-              <font color="#202020">{{ e }}</font>
+              {{ e }}
             </b-dropdown-item>
           </b-dropdown>
         </p>

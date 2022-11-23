@@ -24,7 +24,7 @@
                            type="is-light is-right" 
                            multilined>
             <b-field v-if="createModal.showScenarios" label="Experiment Scenario"></b-field>
-            <b-icon v-if="createModal.showScenarios" icon="question-circle" style="color:#383838"></b-icon>
+            <b-icon v-if="createModal.showScenarios" icon="question-circle" style="color:$text"></b-icon>
           </b-tooltip>
             <b-select v-if="createModal.showScenarios" v-model="createModal.scenario" expanded placeholder="None">
               <option v-for="( a, s ) in createModal.scenarios" :key="s" :value="s">

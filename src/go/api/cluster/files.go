@@ -296,9 +296,8 @@ func getAllFiles(path, expName string, details map[string]ImageDetails) error {
 					if !strings.Contains(row["name"], expName) {
 						continue
 					}
+					getAllFiles(row["name"], expName, details)
 				}
-
-				getAllFiles(row["name"], expName, details)
 			}
 
 			baseName := filepath.Base(row["name"])

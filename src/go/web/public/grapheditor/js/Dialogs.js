@@ -1667,8 +1667,14 @@ function checkValue(graph, cell, ui) {
             return;
         }
     } else {
+        // The `kvm` schema is used for all node types.
+        let type = 'kvm';
+
+        if (cell.getStyle().includes("external")) {
+            type = 'external';
+        }
         // Ensure device type is propogated across edits.
-        schemaVars = { device: device };
+        schemaVars = { device: device, schema: type, type: nodeType};
 
         if (cell.isVertex() && device != 'switch') {
 
@@ -1677,20 +1683,15 @@ function checkValue(graph, cell, ui) {
                 return;
             }
 
-            // The `kvm` schema is used for all node types.
-            let type = 'kvm';
 
-            if (cell.getStyle().includes("external")) {
-                type = 'external';
-            }
 
             const schema = ui.schemas[type]; // get schema to load default values
 
             let config = {
                 schema: schema,
                 startval: {},
-                ajax: true,
                 mode: 'text',
+                ajax: true,
                 modes: ['code', 'text', 'tree'],
                 theme: 'bootstrap3',
                 iconlib: 'spectre',
@@ -1699,24 +1700,33 @@ function checkValue(graph, cell, ui) {
             // hack to parse default schema values
             var element = document.createElement("div");
             element.setAttribute('id', 'jsoneditor');
+
             const jsoneditor = new JSONEditor(element, config);
-            schemaVars = jsoneditor.getEditor('root').value; 
+            jsoneditor.on('ready', () => {
+                console.log("VARS")
+                schemaVars = jsoneditor.getValue();
+                console.log(schemaVars)
 
-            // These aren't in the KVM schema so we have to propogate them.
-            schemaVars.device = device;
-            schemaVars.schema = type;
+                // These aren't in the KVM schema so we have to propogate them.
+                schemaVars.device = device;
+                schemaVars.schema = type;
 
-            schemaVars.type = nodeType;
+                schemaVars.type = nodeType;
 
-            if (typeof schemaVars.general === 'undefined') schemaVars.general = {};
-            schemaVars.general.hostname = `${device}_device_${host_count}`; // (cell.getId());
-            value.setAttribute('label', `${device}_device_${host_count}`);
-            host_count++;
+                if (typeof schemaVars.general === 'undefined') schemaVars.general = {};
+                schemaVars.general.hostname = `${device}_device_${host_count}`; // (cell.getId());
+                value.setAttribute('label', `${device}_device_${host_count}`);
+                host_count++;
 
-            if (type === 'kvm') {
-                if (typeof schemaVars.hardware === 'undefined') schemaVars.hardware = {};
-                schemaVars.hardware.os_type = 'linux';
-            }
+                if (type === 'kvm') {
+                    if (typeof schemaVars.hardware === 'undefined') schemaVars.hardware = {};
+                    schemaVars.hardware.os_type = 'linux';
+                }
+
+                value.setAttribute('schemaVars', JSON.stringify(schemaVars));
+                graph.getModel().setValue(cell, value);
+            })
+            return;
 
         } else {
             // only set default vlan value if device is switch
@@ -2089,6 +2099,8 @@ var EditDataDialog = function(ui, cell)
     let type;
     try {
         startval = JSON.parse(value.getAttribute('schemaVars')); // parse schemaVars to JSON for editor
+        console.log("START: ")
+        console.log(value)
         device = startval.device;
 
         if (cell.isVertex()) {
@@ -2122,6 +2134,8 @@ var EditDataDialog = function(ui, cell)
                     
     // Set JSONEditor and config options based on schema and cell type
     var loadConfig = function () {
+        console.log("LOAD: " + schema)
+        console.log(startval)
 
         this.config = {
             schema: schema,
@@ -2150,6 +2164,8 @@ var EditDataDialog = function(ui, cell)
         editorContainer.style.height = '100%';
         editorContainer.style.position = 'relative';
         editorContainer.style['max-width'] ="600px";
+
+        console.log("SCHEMA: " + schema)
 
         const jsoneditor = new JSONEditor(editorContainer, this.config);
 
@@ -2208,7 +2224,7 @@ var EditDataDialog = function(ui, cell)
                 {
                     ui.hideDialog.apply(ui, arguments);
                     value = value.cloneNode(true);
-                    var updatedNode = jsoneditor.getEditor('root').value; // get current node's JSON (from JSONEditor)
+                    var updatedNode = jsoneditor.getValue(); // get current node's JSON (from JSONEditor)
                     if (type != 'diagraming') {
                         // These aren't in the KVM schema so we have to propogate them.
                         updatedNode.device = device;
@@ -2297,7 +2313,10 @@ var EditDataDialog = function(ui, cell)
         this.container = div;
 
         // show dialog only after editor is created
-        ui.showDialog(this.container, 480, 420, true, false, null, false); 
+        jsoneditor.on('ready', () => {
+            ui.showDialog(this.container, 480, 420, true, false, null, false); 
+            console.log(jsoneditor.getValue())
+        });
 
         // hack to resolve jsoneditor bug where disabled field is enabled when using properties dropdown
         // adds listeners to dynamically-created elements in jsoneditor window
@@ -3714,558 +3733,6 @@ var LayersWindow = function(editorUi, x, y, w, h)
 };
 
 /**
- * Constructs a new JSONEditor for minimega config script
- */
-var EditMiniConfigDialog = function(editorUi,vertices,edges)
-{
-
-        const graph = editorUi.editor.graph;
-
-        var div = document.createElement('div');
-        div.style.textAlign = 'right';
-
-        var header = document.createElement('h2');
-        header.textContent = "Add Config to phēnix Store";
-        header.style.marginTop = "0";
-        header.style.marginBottom = "10px";
-        header.style.textAlign = 'left';
-
-        div.appendChild(header);
-
-        var textarea = document.createElement('textarea');
-        textarea.setAttribute('wrap', 'off');
-        textarea.setAttribute('spellcheck', 'false');
-        textarea.setAttribute('autocorrect', 'off');
-        textarea.setAttribute('autocomplete', 'off');
-        textarea.setAttribute('autocapitalize', 'off');
-        textarea.style.overflow = 'auto';
-        textarea.style.resize = 'none';
-        textarea.style.width = '100%';
-        textarea.style.height = '420px';
-        textarea.style.lineHeight = 'initial';
-        textarea.style.marginBottom = '16px';
-
-        //Walk through all existing edges
-        var edgeArray = [];
-        edges.forEach(cell => {
-            // checkValue(graph, cell);
-            if (cell.hasAttribute('schemaVars')) {
-                var vlan = JSON.parse(cell.getAttribute('schemaVars'));
-                if (typeof vlan.name !== 'undefined' && vlan.name != '') {
-                    if (!vlans_in_use.hasOwnProperty(vlan.name)){
-                        vlans_in_use[vlan.name]=true;
-                    }
-                    if (edgeArray.filter(function(e) { return e.name == vlan.name; }).length <= 0 && vlan.id != 'auto') {
-                        edgeArray.push(vlan);
-                    }
-                }
-            }
-        });
-
-        var count = 0;
-        var parameters = editorUi.params; // minimega parameter->schema maps for script generation
-
-        // utility function to return path array
-        const getPath = (path) => {
-            var paths = path.split('.');
-            var pathString;
-            for (p in paths) {
-                pathString += []
-            }
-            return paths;
-        };
-
-        // utility function to get minimega params from JSON for config
-        // currently not used, but might be worth revisiting down the road
-        // https://stackoverflow.com/questions/15523514/find-by-key-deep-in-a-nested-array
-        // function getParams(object, key, result){
-        //     if(object.hasOwnProperty(key))
-        //         result.push(object[key]);
-
-        //     for(var i=0; i<Object.keys(object).length; i++){
-        //         if(typeof object[Object.keys(object)[i]] == "object"){
-        //             getParams(object[Object.keys(object)[i]], key, result);
-        //         }
-        //     }
-        // }
-
-        var config = "";
-        var prev_dev_config = "";
-        var prev_dev = {};
-        var schemaVars;
-        var miniccc_commands = [];
-        var networks = [];
-        vertices.forEach(cell => {
-
-            if (!cell.hasAttribute('schemaVars')) {
-                return;
-            }
-            // checkValue(graph, cell);
-            var value = graph.getModel().getValue(cell); // value user object
-            value = value.cloneNode(true); // clone for value update
-            schemaVars = JSON.parse(cell.getAttribute('schemaVars'));
-            lookforvlan(graph, cell);
-
-            // if vertex is a switch skip the device in config
-            if (schemaVars.device == 'switch'){
-                return;
-            }
-
-            var dev_config = "";
-            var name = "";
-            
-            try {
-                if (schemaVars.general.hostname != "" && typeof schemaVars.general.hostname != 'undefined') {
-                    config += `## Config for ${schemaVars.general.hostname}\n`;
-                    name = schemaVars.general.hostname;
-                } 
-                else{
-                    config += `##Config for a ${schemaVars.device} device #${count}\n`;
-                    name = `${schemaVars.device}_device_${count}`
-                }
-            }
-            catch {
-                config += `##Config for a ${schemaVars.device} device #${count}\n`;
-                name = `${schemaVars.device}_device_${count}`
-            }
-            value.setAttribute('label', name);
-            graph.getModel().setValue(cell, value);
-            count++;
-
-            if (schemaVars.network) {
-                var netObj = schemaVars.network;
-                netObj.hostname = name;    
-                netObj.router = schemaVars.network.router ? schemaVars.network.router : 'other';
-                networks.push(netObj);
-            }
-
-            var clear = "";
-            // Generate configuration for parameters
-            parameters.forEach(function(p) {
-                var name = p.name;
-                var path = getPath(p.path);
-                var args = p.args;
-                var argString = ``; // append config command arguments
-                var argVals;
-                // if it has a configuration for the parameter set it
-                var obj = schemaVars;
-                try {
-                    for (p in path) {
-                        obj = obj[path[p]];
-                    }
-                }
-                catch (e) {
-                    // console.log(e);
-                    // return; 
-                }
-                if (Array.isArray(obj) && obj.length > 0) {
-                    for (var i = 0; i < obj.length; i++) {
-                        argVals = [];
-                        for (var j = 0; j < args.length; j++) {
-                            try {
-                                var argval = obj[i][args[j]].toString(); // to catch false/boolean values
-                                // explicit lookup for vlans with IDs; use ID instead of alias
-                                if (name == 'net' && args[j] == 'vlan') {
-                                    if (edgeArray.filter(function(e) { return e.name == argval; }).length > 0) {
-                                        argval = edgeArray.filter(function(e) { return e.name == argval; })[0].id;
-                                    }
-                                }
-                                if (argval && argval != '') {
-                                    argVals.push(argval); 
-                                }
-                            }
-                            catch (e) {
-                                // console.log(e);
-                            }
-                        }
-                        argString += argVals.join(',');
-                        if (i < obj.length - 1 && obj.length != 1) {
-                            argString += ` `;
-                        }
-                    }
-                }
-                else if (typeof obj !== 'undefined') {
-                    argVals = [];
-                    for (var i = 0; i < args.length; i++) {
-                        try {
-                            var argval = obj[args[i]].toString(); // to catch false/boolean values
-                            if (argval && argval != '') {
-                                argVals.push(argval);
-                            }
-                        }
-                        catch (e) {
-                            // console.log(e);
-                        }
-                    }
-                    argString += argVals.join(',');
-                }
-                var value = argString;
-                if (name == 'hostname' && schemaVars.type == 'kvm') value = '';
-                // If new config for a parameter exists, set it
-                if (prev_dev[name] != value && value != ''){ //  && name != "net"
-                    prev_dev[name] = value;
-                    config += `vm config ${name} ${value} \n`;
-                }
-                else if (prev_dev.hasOwnProperty(name) && value == '') { // && name != "net" 
-                    // If there is no configuration for a parameter and the previous device had one clear it
-                    delete prev_dev[name];
-                    clear += `clear vm config ${name}\n`;
-                }
-            });
-
-            config += clear;
-            if (schemaVars.type == "container") {config+=`vm launch container ${name}\n\n`;}
-            else {config+=`vm launch ${schemaVars.type} ${name}\n\n`;}
-            if (typeof schemaVars.miniccc_commands !== 'undefined') {
-                for (var i = 0; i < schemaVars.miniccc_commands.length; i++) {
-                    if (schemaVars.miniccc_commands[i] != '') {
-                        miniccc_commands.push(schemaVars.miniccc_commands[i]);
-                    }
-                }
-            }
-        });
-        textarea.value = config;
-        textarea.value += "## Starting all VM's\nvm start all\n";
-
-        // router commands
-        // console.log(networks);
-        if (networks.length > 0) {
-            textarea.value += "\n## router commands\n";
-        }
-        networks.forEach(network => {
-            try {
-                var routerType = network.router;
-                for (var i = 0; i < network.interfaces.length; i++) {
-                    var hostname = network.hostname;
-                    var iface = null;
-                    var ipAddr = null;
-                    var ipMask = null;
-                    var gateway = null;
-                    var dhcp = false;
-                    if (network.interfaces[i].proto) {
-                        if (network.interfaces[i].proto == 'dhcp') {
-                            dhcp = true;
-                        }
-                    }
-                    if (network.interfaces[i].name) {
-                        iface = network.interfaces[i].name;
-                    }
-                    if (network.interfaces[i].address) {
-                        ipAddr = network.interfaces[i].address;
-                    }
-                    if (network.interfaces[i].mask) {
-                        ipMask = network.interfaces[i].mask;
-                    }
-                    if (network.interfaces[i].gateway) {
-                        gateway = network.interfaces[i].gateway;
-                    }
-                    if (iface && ((ipAddr && ipMask) || dhcp)) {
-                        if (routerType == 'minirouter') {
-                            var ipString =  !dhcp ? (ipAddr + '/' + ipMask) : 'dhcp';
-                            textarea.value += `router ${hostname} ${iface} network ${ipString}\n`;
-                        }
-                        else {
-                            if (!dhcp) {
-                                textarea.value += `cc exec ip addr add ${ipAddr}/${ipMask} dev ${iface}\n`;
-                            }
-                            else {
-                                textarea.value += `cc exec dhclient ${iface}\n`;
-                            }
-                        }
-                    }
-                    if (gateway) {
-                        if (routerType == 'minirouter') {
-                            textarea.value += `router ${hostname} gw ${gateway}\n`;
-                        }
-                        else {
-                            textarea.value += `cc exec ip route add 0.0.0.0/0 via ${gateway}\n`;
-                        }
-                    }
-                }
-                if (routerType == 'minirouter') {
-                    textarea.value += `router ${hostname} commit\n`;
-                }
-            }
-            catch (e) {
-                // console.log(e);
-            }
-        });
-
-        // miniccc commands
-        if (miniccc_commands.length > 0) textarea.value += "\n## miniccc commands\n"
-        for(var i = 0; i < miniccc_commands.length; i++) {
-            textarea.value += miniccc_commands[i]+"\n";
-            // if (i == miniccc_commands.length - 1) {textarea.value += "\n";}
-        }
-
-        // apply experiment variables
-        // console.log(window.experiment_vars);
-        if (window.experiment_vars != undefined)
-        {
-            for (var i = 0; i < window.experiment_vars.length; i++)
-            {
-                var name = window.experiment_vars[i].name;
-                var value = window.experiment_vars[i].value;
-
-                var name = new RegExp('\\$'+name, 'g');
-                textarea.value = textarea.value.replace(name, value);
-            }
-        }
-        div.appendChild(textarea);
-
-        this.init = function()
-        {
-                textarea.focus();
-        };
-
-        // Enables dropping files
-        if (Graph.fileSupport)
-        {
-                function handleDrop(evt)
-                {
-                    evt.stopPropagation();
-                    evt.preventDefault();
-
-                    if (evt.dataTransfer.files.length > 0)
-                    {
-                        var file = evt.dataTransfer.files[0];
-                        var reader = new FileReader();
-
-                                reader.onload = function(e)
-                                {
-                                        textarea.value = e.target.result;
-                                };
-
-                                reader.readAsText(file);
-                }
-                    else
-                    {
-                        textarea.value = editorUi.extractGraphModelFromEvent(evt);
-                    }
-                };
-
-                function handleDragOver(evt)
-                {
-                        evt.stopPropagation();
-                        evt.preventDefault();
-                };
-
-                // Setup the dnd listeners.
-                textarea.addEventListener('dragover', handleDragOver, false);
-                textarea.addEventListener('drop', handleDrop, false);
-        }
-
-        var formdiv = document.createElement('div');
-        div.appendChild(formdiv);
-
-        var cbdiv = document.createElement('div');
-        cbdiv.style.float = "left";
-        formdiv.appendChild(cbdiv);
-
-        var checkbox = document.createElement('input');
-        checkbox.type = "checkbox";
-
-        var checkboxLabel = document.createElement('label');
-        checkboxLabel.textContent = 'Clear previous experiment?';
-
-        cbdiv.appendChild(checkbox);
-        cbdiv.appendChild(checkboxLabel);
-
-        var cancelBtn = mxUtils.button(mxResources.get('cancel'), function()
-        {
-                editorUi.hideDialog();
-        });
-        cancelBtn.className = 'geBtn';
-
-        if (editorUi.editor.cancelFirst)
-        {
-                formdiv.appendChild(cancelBtn);
-        }
-
-        var runBtn = mxUtils.button(mxResources.get('run'), function()
-        {
-                progressInit(document.getElementsByClassName('geDiagramContainer')[0]);
-
-                // a little hacky, but need to delay to allow spinner to render, since
-                // command execution wrecks DOM with large topos (TODO: use webworkers/async/etc.?)
-                setTimeout(function() {
-                    // Removes all illegal control characters before parsing
-                    var data = Graph.zapGremlins(mxUtils.trim(textarea.value));
-
-                    let cmds = data.split('\n').map(l => {
-                      return l.trim();
-                    }).filter(l => {
-                      return !(l === '' || l.startsWith('#'));
-                    }).map(l => {
-                      return {
-                        command: l
-                      };
-                    });
-
-                    var resetmm = [{command: "clear all"}];
-                    if (checkbox.checked) {
-                      var tmp = [];
-                      tmp.push(...resetmm);
-                      tmp.push(...cmds);
-                      cmds = tmp;
-                    }
-                    
-                    var responseDlg = new MiniResponseDialog(editorUi);
-                    $.post('/commands', JSON.stringify(cmds), function(resp){
-                      editorUi.showDialog(responseDlg.container, 600, 600, true, false, null, false);
-                      responseDlg.init();
-                      for (let i = 0; i < resp.length; i++) {
-                        let rs  = resp[i];
-                        let cmd  = cmds[i];
-                        responseDlg.appendRow(cmd.command, rs);
-                      }
-                    }, "json");
-
-                    progressDestroy();
-                    editorUi.hideDialog();
-                }, 300);
-        });
-        runBtn.className = 'geBtn gePrimaryBtn';
-        formdiv.appendChild(runBtn);
-
-        if (!editorUi.editor.cancelFirst)
-        {
-                formdiv.appendChild(cancelBtn);
-        }
-
-        this.container = div;
-};
-
-/**
- *
- */
-EditMiniConfigDialog.showNewWindowOption = true;
-
-var MiniResponseDialog = function(editorUi)
-{
-    var div = document.createElement('div');
-    div.style.overflow = 'auto';
-
-    var header = document.createElement('h2');
-    header.textContent = "Minimega Response";
-    header.style.marginTop = "0";
-    header.style.marginBottom = "10px";
-
-    var tdiv = document.createElement('div');
-    tdiv.style['padding-right'] = "8px";
-    // tdiv.style.overflowY = 'scroll';
-    // tdiv.style.height = '500px';
-
-    var table = document.createElement('table');
-    table.setAttribute('wrap', 'off');
-    table.setAttribute('spellcheck', 'false');
-    table.setAttribute('autocorrect', 'off');
-    table.setAttribute('autocomplete', 'off');
-    table.setAttribute('autocapitalize', 'off');
-    // table.style.overflow = 'auto';
-    table.style.resize = 'none';
-    table.style.width = '100%';
-    // table.style.height = '100%';
-    table.style.lineHeight = 'initial';
-    table.style.marginBottom = '16px';
-
-    tdiv.appendChild(table);
-
-    div.appendChild(header);
-    div.appendChild(tdiv);
-
-    let theader = document.createElement('tr');
-    theader.style.verticalAlign = 'top';
-    theader.style.fontWeight = 'bold';
-
-    let cmdTh = document.createElement('th');
-    cmdTh.textContent = "Command";
-    theader.appendChild(cmdTh);
-
-    let respTh = document.createElement('th');
-    respTh.textContent = "Response";
-    theader.appendChild(respTh);
-
-    table.appendChild(theader);
-
-    this.appendRow = function(cmd, resps) {
-        let row = document.createElement('tr');
-        row.style.verticalAlign = 'top';
-
-        let cmdTd = document.createElement('td');
-        let respTd = document.createElement('td');
-
-        cmdTd.textContent = cmd;
-
-        for (let r of resps){
-            if (r.Error) {
-            respTd.textContent = "Error: " + r.Error;
-            respTd.style.color = "red";
-            respTd.style.fontWeight = "bold";
-        } else if (r.Response) {
-            respTd.textContent = r.Response;
-        } else {
-                // blank response
-                respTd.innerHTML = "&#10004;"
-                respTd.style.color = "green";
-            }
-        }
-
-      table.appendChild(row);
-      row.appendChild(cmdTd);
-      row.appendChild(respTd);
-    }
-
-    this.init = function()
-    {
-        table.focus();
-    };
-
-    var formdiv = document.createElement('div');
-    formdiv.style.textAlign = 'right';
-    formdiv.style.marginTop = '20px';
-    div.appendChild(formdiv);
-
-    var cancelBtn = mxUtils.button(mxResources.get('cancel'), function()
-    {
-        editorUi.hideDialog();
-    });
-
-    cancelBtn.className = 'geBtn';
-
-    var okBtn = mxUtils.button(mxResources.get('ok'), function()
-    {
-        editorUi.hideDialog();
-    });
-
-    okBtn.className = 'geBtn gePrimaryBtn';
-
-    var buttons = document.createElement('div');
-    buttons.style.cssText = 'position:absolute;left:30px;right:30px;text-align:right;bottom:15px;height:40px;border-top:1px solid #ccc;padding-top:20px;margin-bottom:15px;'
-    
-    if (editorUi.editor.cancelFirst)
-    {
-        buttons.appendChild(cancelBtn);
-        buttons.appendChild(okBtn);
-    }
-    else
-    {
-        buttons.appendChild(okBtn);
-        buttons.appendChild(cancelBtn);
-    }
-    
-    formdiv.appendChild(buttons);
-
-    this.container = div;
-};
-
-/**
- *
- */
-MiniResponseDialog.showNewWindowOption = true;
-
-
-/**
  * Constructs a new JSONEditor for experiment variables
  */
 
@@ -4313,6 +3780,7 @@ var VariablesDialog = function(ui)
         editorContainer.style.height = '100%';
         editorContainer.style.position = 'relative';
         editorContainer.style['max-width'] ="600px";
+        console.log("SCHEMA2: " + schema)
 
         const jsoneditor = new JSONEditor(editorContainer, this.config);
 
@@ -4335,7 +3803,7 @@ var VariablesDialog = function(ui)
                 try
                 {
                     ui.hideDialog.apply(ui, arguments);
-                    var updatedNode = jsoneditor.getEditor('root').value; // get current node's JSON (from JSONEditor)
+                    var updatedNode = jsoneditor.getValue(); // get current node's JSON (from JSONEditor)
                     window.experiment_vars = updatedNode;
                 }
                 catch (e)
@@ -4738,3 +4206,13 @@ function progressInit(container) {
 function progressDestroy() {
     document.getElementById('loadingDiv').remove();
 }
+
+function getPromiseFromEvent(item, event) {
+    return new Promise((resolve) => {
+      const listener = () => {
+        item.removeEventListener(event, listener);
+        resolve();
+      }
+      item.addEventListener(event, listener);
+    })
+  }

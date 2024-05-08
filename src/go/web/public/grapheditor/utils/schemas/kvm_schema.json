@@ -692,12 +692,7 @@
     "advanced": {
       "$id": "#/nodes/properties/advanced",
       "type": "object",
-      "properties": {
-        "qemu-append": {
-          "$id": "#/nodes/properties/advanced/qemu-append",
-          "type": "string"
-        }
-      }
+      "additionalProperties": { "type": "string" }
     }
   },
   "definitions": {

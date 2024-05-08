@@ -141,7 +141,6 @@ formattedText=Formatted Text
 gap=Gap
 glass=Glass
 general=General
-generateConfig=Generate Config
 global=Global
 gradient=Gradient
 gradientColor=Color

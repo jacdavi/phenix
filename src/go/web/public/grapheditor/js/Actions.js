@@ -214,22 +214,6 @@ Actions.prototype.init = function()
     this.addAction('pageSetup...', function() { ui.showDialog(new PageSetupDialog(ui).container, 320, 220, true, true); }).isEnabled = isGraphEnabled;
     this.addAction('print...', function() { ui.showDialog(new PrintDialog(ui).container, 300, 180, true, true); }, null, 'sprite-print', Editor.ctrlKey + '+P');
     this.addAction('preview', function() { mxUtils.show(graph, null, 10, 10); });
-    this.addAction('generateConfig', function() 
-    {
-        progressInit(document.getElementsByClassName('geDiagramContainer')[0]);
-        // a little hacky, but need to delay to allow spinner to render, since
-        // config generation wrecks DOM with large topos (TODO: use webworkers/async/etc.?)
-        setTimeout(function() {
-            var filter = function(cell) {return graph.model.isVertex(cell);}
-            var vertices = graph.model.filterDescendants(filter);
-            filter = function(cell) {return graph.model.isEdge(cell);}
-            var edges = graph.model.filterDescendants(filter);
-            var dlg = new EditMiniConfigDialog(ui,vertices,edges);
-            ui.showDialog(dlg.container, 620, 450, true, false);
-            dlg.init();
-            progressDestroy();
-        }, 300);
-    });
 
     this.addAction('editVariables...', function()
     {

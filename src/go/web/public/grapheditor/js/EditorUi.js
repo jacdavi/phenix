@@ -3812,6 +3812,9 @@ EditorUi.prototype.addSplitHandler = function(elt, horizontal, dx, onChange)
  */
 EditorUi.prototype.handleError = function(resp, title, fn, invokeFnOnClose, notFoundMessage)
 {
+    console.log("Got Error: " + resp)
+    if (resp != null && resp.stack)
+        console.error(resp.stack)
     var e = (resp != null && resp.error != null) ? resp.error : resp;
 
     if (e != null || title != null)

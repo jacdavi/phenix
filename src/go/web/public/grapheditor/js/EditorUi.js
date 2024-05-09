@@ -67,8 +67,8 @@ EditorUi = function(editor, container, lightbox)
         self.params = JSON.parse(response).parameters;
     }
 
-    // set default node schema
-    loadFile(window.UTILS_PATH + '/schemas/node_schema.json', 'application/json', 'node', setSchema);
+    
+
     // set default kvm schema
     loadFile(window.UTILS_PATH + '/schemas/kvm_schema.json', 'application/json', 'kvm', setSchema);
     // set default container schema

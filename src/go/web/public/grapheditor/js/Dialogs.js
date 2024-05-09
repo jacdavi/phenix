@@ -1950,6 +1950,17 @@ function lookforvlan(graph, cell, toSwitch=null){
             var eth = 'eth' + connectedVlanIdx;
             var e = cell.getEdgeAt(i);
 
+            // order of interfaces on node may not match order of cell edges
+            // so try to match on vlan name before proceeding
+            let expectedVlan = schemaVars.network.interfaces[connectedVlanIdx].vlan
+            for (var edge of cell.edges) {
+                if (JSON.parse(edge.getAttribute('schemaVars')).name == expectedVlan) {
+                    console.log("MATCH")
+                    e = edge;
+                    break;
+                }
+            }
+
             // if edge is a diagraming edge, continue
             if (checkEdgeDiagraming(graph, e)) {
                 continue;

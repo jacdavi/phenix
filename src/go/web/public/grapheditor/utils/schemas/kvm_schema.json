@@ -1,50 +1,13 @@
 {
   "type": "object",
   "title": "Node",
+  "format": "categories",
   "required": [
     "type",
     "general",
     "hardware"
   ],
   "properties": {
-    "annotations": {
-      "title": "Annotations",
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": [
-          "key",
-          "value"
-        ],
-        "properties": {
-          "key": {
-            "type": "string"
-          },
-          "value": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "labels": {
-      "title": "Labels",
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": [
-          "key",
-          "value"
-        ],
-        "properties": {
-          "key": {
-            "type": "string"
-          },
-          "value": {
-            "type": "string"
-          }
-        }
-      }
-    },
     "type": {
       "$id": "#/nodes/properties/type",
       "type": "string",
@@ -58,7 +21,9 @@
         "Switch"
       ],
       "default": "VirtualMachine",
-      "examples": ["VirutalMachine"],
+      "examples": [
+        "VirutalMachine"
+      ],
       "readonly": false,
       "pattern": "^(.*)$"
     },
@@ -276,7 +241,8 @@
             "$id": "#/nodes/properties/network/properties/interfaces/items",
             "type": "object",
             "title": "Interface",
-            "oneOf": [{
+            "oneOf": [
+              {
                 "$ref": "#/definitions/static_iface",
                 "title": "Static"
               },
@@ -603,6 +569,7 @@
     "injections": {
       "$id": "#/nodes/properties/injections",
       "type": "array",
+      "format": "table",
       "title": "Injections",
       "items": {
         "$id": "#/nodes/properties/injections/items",
@@ -647,6 +614,7 @@
     },
     "delay": {
       "$id": "#/nodes/properties/delay",
+      "title": "Delay",
       "type": "object",
       "properties": {
         "timer": {
@@ -660,6 +628,7 @@
         "c2": {
           "$id": "#/nodes/properties/delay/c2",
           "type": "array",
+          "format": "table",
           "items": {
             "$id": "#/nodes/properties/delay/c2/items",
             "type": "object",
@@ -683,21 +652,79 @@
     },
     "commands": {
       "$id": "#/nodes/properties/commands",
+      "title": "Commands",
       "type": "array",
+      "format": "table",
       "items": {
         "$id": "#/nodes/properties/commands/items",
         "type": "string"
       }
     },
+    "annotations": {
+      "title": "Annotations",
+      "type": "array",
+      "format": "table",
+      "items": {
+        "type": "object",
+        "required": [
+          "key",
+          "value"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "labels": {
+      "title": "Labels",
+      "type": "array",
+      "format": "table",
+      "items": {
+        "type": "object",
+        "required": [
+          "key",
+          "value"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "advanced": {
-      "$id": "#/nodes/properties/advanced",
-      "type": "object",
-      "additionalProperties": { "type": "string" }
+      "title": "Advanced",
+      "type": "array",
+      "format": "table",
+      "items": {
+        "type": "object",
+        "required": [
+          "key",
+          "value"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      }
     }
   },
   "definitions": {
     "static_iface": {
-      "allOf": [{
+      "allOf": [
+        {
           "$ref": "#/definitions/iface"
         },
         {
@@ -732,12 +759,16 @@
               ]
             }
           },
-          "required": ["type", "proto"]
+          "required": [
+            "type",
+            "proto"
+          ]
         }
       ]
     },
     "dhcp_iface": {
-      "allOf": [{
+      "allOf": [
+        {
           "$ref": "#/definitions/iface"
         },
         {
@@ -777,7 +808,8 @@
       ]
     },
     "serial_iface": {
-      "allOf": [{
+      "allOf": [
+        {
           "$ref": "#/definitions/iface"
         },
         {
@@ -959,14 +991,20 @@
           "pattern": "^(?!0)(?!.*\\.$)((1?\\d?\\d|25[0-5]|2[0-4]\\d)(\\.|$)){4}$"
         },
         "dns": {
-          "type": ["string", "array"],
+          "type": [
+            "string",
+            "array"
+          ],
           "title": "dns",
           "examples": [
             "192.168.1.1"
           ]
         }
       },
-      "required": ["address", "mask"]
+      "required": [
+        "address",
+        "mask"
+      ]
     },
     "iface_rulesets": {
       "type": "object",

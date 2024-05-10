@@ -479,18 +479,18 @@ div.mxWindow .geButton {
         background:white;
         line-height:1em;
         overflow:hidden;
-        padding:30px;
+        padding:8px;
         border:1px solid #acacac;
         -webkit-box-shadow:0px 0px 2px 2px #d5d5d5;
         -moz-box-shadow:0px 0px 2px 2px #d5d5d5;
         box-shadow:0px 0px 2px 2px #d5d5d5;
         _filter:progid:DXImageTransform.Microsoft.DropShadow(OffX=2, OffY=2, Color='#d5d5d5', Positive='true');
         z-index: 2;
-        width:100% !important;
-        max-width: 640px !important;
-        max-height: 640px !important;
+        /* width:100% !important; */
+        /* max-width: 640px !important;
+        max-height: 640px !important; */
         /*overflow:auto !important;*/
-        padding-bottom: 110px !important;
+        padding-bottom: 64px !important;
 }
 .geTransDialog {
         position:absolute;

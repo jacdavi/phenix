@@ -2,6 +2,7 @@
   "$id": "#/experimentVars",
   "type": "array",
   "title": "Experiment Variables",
+  "format": "table",
   "items": {
     "$id": "#/experimentVars/items",
     "type": "object",

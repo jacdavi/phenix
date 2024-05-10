@@ -168,7 +168,7 @@ Actions.prototype.init = function()
 
         this.container = div;
 
-        ui.showDialog(this.container, 600, 20, true, false, null, false); 
+        ui.showDialog(this.container, 600, 80, true, false, null, false); 
     });
 
     this.addAction('import...', function()

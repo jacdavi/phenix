@@ -1703,9 +1703,7 @@ function checkValue(graph, cell, ui) {
 
             const jsoneditor = new JSONEditor(element, config);
             jsoneditor.on('ready', () => {
-                console.log("VARS")
                 schemaVars = jsoneditor.getValue();
-                console.log(schemaVars)
 
                 // These aren't in the KVM schema so we have to propogate them.
                 schemaVars.device = device;
@@ -1946,20 +1944,23 @@ function lookforvlan(graph, cell, toSwitch=null){
                     break;
                 }
             }
+            
             // console.log(connectedVlanIdx);
             var eth = 'eth' + connectedVlanIdx;
             var e = cell.getEdgeAt(i);
 
             // order of interfaces on node may not match order of cell edges
             // so try to match on vlan name before proceeding
-            let expectedVlan = schemaVars.network.interfaces[connectedVlanIdx].vlan
-            for (var edge of cell.edges) {
-                if (JSON.parse(edge.getAttribute('schemaVars')).name == expectedVlan) {
-                    console.log("MATCH")
-                    e = edge;
-                    break;
+            try {
+                let expectedVlan = schemaVars.network.interfaces[connectedVlanIdx].vlan
+                for (var edge of cell.edges) {
+                    if (JSON.parse(edge.getAttribute('schemaVars')).name == expectedVlan) {
+                        console.log("MATCH")
+                        e = edge;
+                        break;
+                    }
                 }
-            }
+            } catch {}
 
             // if edge is a diagraming edge, continue
             if (checkEdgeDiagraming(graph, e)) {
@@ -2152,14 +2153,16 @@ var EditDataDialog = function(ui, cell)
             schema: schema,
             startval: startval,
             ajax: true,
-            mode: 'tree',
-            modes: ['code', 'text', 'tree'],
             show_errors: 'always',
             theme: 'bootstrap3',
             iconlib: 'spectre',
             no_additional_properties: true,
             disable_edit_json: true,
-            display_required_only: true
+            disable_array_delete_last_row: true,
+            disable_properties: true,
+            disable_collapse: true,
+            show_opt_in: true
+
         };
 
         createEditor();
@@ -2174,8 +2177,6 @@ var EditDataDialog = function(ui, cell)
         editorContainer.setAttribute('id', 'jsoneditor');
         editorContainer.style.height = '100%';
         editorContainer.style.position = 'relative';
-        editorContainer.style['max-width'] ="600px";
-
         console.log("SCHEMA: " + schema)
 
         const jsoneditor = new JSONEditor(editorContainer, this.config);
@@ -2299,33 +2300,43 @@ var EditDataDialog = function(ui, cell)
 
         applyBtn.className = 'geBtn gePrimaryBtn';
 
+        var errorText = document.createElement('div');
+        errorText.style.cssText = "color: red; display: inline-block; max-width: 700px;white-space: nowrap; text-overflow: ellipsis; overflow: hidden;";
+
         jsoneditor.on('change',() => {
             const errors = jsoneditor.validate();
-            if (errors.length) {applyBtn.setAttribute('disabled', 'disabled');}
-            else {applyBtn.removeAttribute('disabled');}
-            listenToDynamicElements();
+            if (errors.length) {
+                console.log(errors)
+                applyBtn.setAttribute('disabled', 'disabled');
+                errorText.innerText = errors[0].path.replace("root.", "") + ": " + errors[0].message;
+            }
+            else {
+                applyBtn.removeAttribute('disabled');
+                errorText.innerText = "";
+            }
         });
         
-        var buttons = document.createElement('div');
-        buttons.style.cssText = 'position:absolute;left:30px;right:30px;text-align:right;bottom:15px;height:40px;border-top:1px solid #ccc;padding-top:20px;'
+        var footer = document.createElement('div');
+        footer.style.cssText = 'position:absolute;left:30px;right:30px;text-align:right;bottom:15px;height:40px;border-top:1px solid #ccc;padding-top:20px;'
+        footer.appendChild(errorText);
         
         if (ui.editor.cancelFirst)
         {
-            buttons.appendChild(cancelBtn);
-            buttons.appendChild(applyBtn);
+            footer.appendChild(cancelBtn);
+            footer.appendChild(applyBtn);
         }
         else
         {
-            buttons.appendChild(applyBtn);
-            buttons.appendChild(cancelBtn);
+            footer.appendChild(applyBtn);
+            footer.appendChild(cancelBtn);
         }
 
-        div.appendChild(buttons);
+        div.appendChild(footer);
         this.container = div;
 
         // show dialog only after editor is created
         jsoneditor.on('ready', () => {
-            ui.showDialog(this.container, 480, 420, true, false, null, false); 
+            ui.showDialog(this.container, 1000, 800, true, false, null, false); 
             console.log(jsoneditor.getValue())
         });
 
@@ -2393,24 +2404,15 @@ var viewJSONDialog = function(ui)
 
             var node = JSON.parse(cell.getAttribute('schemaVars'));
             if (node.device != 'switch') {
-                if (node.annotations) {
-                    var annotations = {};
-
-                    node.annotations.forEach(a => {
-                        annotations[a.key] = a.value;
-                    });
-
-                    node.annotations = annotations;
-                }
-
-                if (node.labels) {
-                    var labels = {};
-
-                    node.labels.forEach(l => {
-                        labels[l.key] = l.value;
-                    });
-
-                    node.labels = labels;
+                // switch from list of key,value pairs to an object
+                for (entry of ["annotations", "labels", "advanced"]) {
+                    if (node[entry]) {
+                        var obj = {}
+                        node[entry].forEach(e => {
+                            obj[e.key] = e.value
+                        })
+                        node[entry] = obj;
+                    }
                 }
 
                 delete node.device;
@@ -2816,7 +2818,7 @@ var viewJSONDialog = function(ui)
         this.container = div;
 
         // show dialog only after editor is created
-        ui.showDialog(this.container, 480, 460, true, false, null, false); 
+        ui.showDialog(this.container, 600, 500, true, false, null, false); 
         progressDestroy();
 
     };
@@ -3769,13 +3771,15 @@ var VariablesDialog = function(ui)
             schema: schema,
             startval: startval,
             ajax: true,
-            mode: 'tree',
-            modes: ['code', 'text', 'tree'],
             show_errors: 'always',
             theme: 'bootstrap3',
             iconlib: 'spectre',
+            no_additional_properties: true,
             disable_edit_json: true,
-            disable_properties: true
+            disable_array_delete_last_row: true,
+            disable_properties: true,
+            disable_collapse: true,
+            show_opt_in: true
         };
 
         createEditor();
@@ -3790,8 +3794,6 @@ var VariablesDialog = function(ui)
         editorContainer.setAttribute('id', 'jsoneditor');
         editorContainer.style.height = '100%';
         editorContainer.style.position = 'relative';
-        editorContainer.style['max-width'] ="600px";
-        console.log("SCHEMA2: " + schema)
 
         const jsoneditor = new JSONEditor(editorContainer, this.config);
 
@@ -3831,32 +3833,43 @@ var VariablesDialog = function(ui)
         });
 
         applyBtn.className = 'geBtn gePrimaryBtn';
+        var errorText = document.createElement('div');
+        errorText.style.cssText = "color: red; display: inline-block; max-width: 300px;white-space: nowrap; text-overflow: ellipsis; overflow: hidden;";
+
 
         jsoneditor.on('change',() => {
             const errors = jsoneditor.validate();
-            if (errors.length) {applyBtn.setAttribute('disabled', 'disabled');}
-            else {applyBtn.removeAttribute('disabled');}
+            if (errors.length) {
+                console.log(errors)
+                applyBtn.setAttribute('disabled', 'disabled');
+                errorText.innerText = errors[0].path.replace("root.", "") + ": " + errors[0].message;
+            }
+            else {
+                applyBtn.removeAttribute('disabled');
+                errorText.innerText = "";
+            }
         });
         
-        var buttons = document.createElement('div');
-        buttons.style.cssText = 'position:absolute;left:30px;right:30px;text-align:right;bottom:15px;height:40px;border-top:1px solid #ccc;padding-top:20px;margin-bottom:15px;'
-        
+        var footer = document.createElement('div');
+        footer.style.cssText = 'position:absolute;left:30px;right:30px;text-align:right;bottom:15px;height:40px;border-top:1px solid #ccc;padding-top:20px;margin-bottom:15px;'
+        footer.appendChild(errorText);
+
         if (ui.editor.cancelFirst)
         {
-            buttons.appendChild(cancelBtn);
-            buttons.appendChild(applyBtn);
+            footer.appendChild(cancelBtn);
+            footer.appendChild(applyBtn);
         }
         else
         {
-            buttons.appendChild(applyBtn);
-            buttons.appendChild(cancelBtn);
+            footer.appendChild(applyBtn);
+            footer.appendChild(cancelBtn);
         }
 
-        div.appendChild(buttons);
+        div.appendChild(footer);
         this.container = div;
 
         // show dialog only after editor is created
-        ui.showDialog(this.container, 480, 420, true, false, null, false); 
+        ui.showDialog(this.container, 800, 600, true, false, null, false); 
 
     };
 

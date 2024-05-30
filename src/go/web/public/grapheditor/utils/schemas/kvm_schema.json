@@ -72,7 +72,7 @@
           "$id": "#/nodes/properties/general/properties/snapshot",
           "type": "boolean",
           "title": "snapshot",
-          "default": false,
+          "default": true,
           "examples": [
             false
           ],

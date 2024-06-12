@@ -6,14 +6,14 @@ login and returns a user to Experiments component if successful.
 -->
 
 <template>
-  <div class="container">
+  <div>
     <app-header></app-header>
-    <div class="row">
+    <div class="row container is-fullhd px-4">
       <div class="col-xs-12">
         <router-view></router-view>
       </div>
-    <app-footer></app-footer>
     </div>
+    <app-footer></app-footer>
   </div>
 </template>
 
@@ -248,6 +248,14 @@ clue what this stuff does.
     transform: rotate( 0deg );
   }
 
+  .b-table {
+    .table {
+      td {
+        vertical-align: middle;
+      }
+    }
+  }
+
   // Import Bulma's core
   @import "~bulma/sass/utilities/_all";
 
@@ -264,6 +272,8 @@ clue what this stuff does.
   $light-invert: findColorInvert( $light );
 
   $progress-text-color: black;
+
+  $fullhd: 1536px + (2 * $gap);
 
   $colors: (
     "light": ( $light, $light-invert ),

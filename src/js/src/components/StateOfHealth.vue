@@ -138,7 +138,6 @@
         </footer>
       </div>
     </b-modal>
-    <hr>
     <div class="columns is-centered"> 
       <div class="column is-1">
         <router-link class="button is-dark" :to="{ name: 'experiment', params: { id: this.$route.params.id }}">

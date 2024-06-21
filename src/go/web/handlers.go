@@ -2681,16 +2681,19 @@ func GetDisks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	allowed := []string{}
+	allowed := []cluster.ImageDetails{}
 	for _, disk := range disks {
 		if role.Allowed("disks", "list", disk.Name) {
-			allowed = append(allowed, disk.FullPath)
+			allowed = append(allowed, disk)
 		}
 	}
 
-	sort.Strings(allowed)
+	sort.Slice(allowed, func(i, j int) bool {
+		return allowed[i].Name < allowed[j].Name
+	})
 
-	body, err := marshaler.Marshal(&proto.DiskList{Disks: allowed})
+
+	body, err := json.Marshal(util.WithRoot("disks", allowed))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

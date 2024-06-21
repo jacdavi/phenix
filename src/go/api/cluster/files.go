@@ -23,10 +23,10 @@ const (
 )
 
 type ImageDetails struct {
-	Kind     ImageKind
-	Name     string
-	FullPath string
-	Size     int
+	Kind     ImageKind	`json:"kind"`
+	Name     string		`json:"name"`
+	FullPath string		`json:"fullPath"`
+	Size     int		`json:"size"`
 }
 
 var DefaultClusterFiles ClusterFiles = new(MMClusterFiles)

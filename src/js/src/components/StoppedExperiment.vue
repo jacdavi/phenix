@@ -636,7 +636,7 @@
                   this.isWaiting = true;
                 } else {
                   for ( let i = 0; i < state.disks.length; i++ ) {
-                    this.disks.push( state.disks[ i ] );
+                    this.disks.push( state.disks[ i ].fullPath );
                   }
 
                   this.disks.sort()

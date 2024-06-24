@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -22,11 +23,17 @@ const (
 	ISO_IMAGE
 )
 
+func (k ImageKind) MarshalJSON() ([]byte, error) {
+	return json.Marshal([]string{"Unknown", "VM", "Container", "ISO"}[k-1])
+}
+
 type ImageDetails struct {
-	Kind     ImageKind	`json:"kind"`
-	Name     string		`json:"name"`
-	FullPath string		`json:"fullPath"`
-	Size     int		`json:"size"`
+	Kind         ImageKind `json:"kind"`
+	Name         string    `json:"name"`
+	FullPath     string    `json:"fullPath"`
+	Size         int       `json:"size"`
+	Experiment   *string   `json:"experiment"`
+	BackingImage *string   `json:"backingImage"`
 }
 
 var DefaultClusterFiles ClusterFiles = new(MMClusterFiles)
@@ -83,6 +90,8 @@ func DeleteFile(path string) error {
 
 type MMClusterFiles struct{}
 
+// Gets images in base directory, plus any images that expName references
+// if expName is empty, will check all known experiments
 func (MMClusterFiles) GetImages(expName string, kind ImageKind) ([]ImageDetails, error) {
 	// Using a map here to weed out duplicates.
 	details := make(map[string]ImageDetails)
@@ -92,11 +101,20 @@ func (MMClusterFiles) GetImages(expName string, kind ImageKind) ([]ImageDetails,
 		return nil, err
 	}
 
-	// Add all files defined in the experiment topology
-	// if an experiment name was given
+	// Add all files defined in the experiment topology if given; otherwise check all experiments
 	if len(expName) > 0 {
 		if err := getTopologyFiles(expName, details); err != nil {
 			return nil, err
+		}
+	} else {
+		experiments, err := experiment.List()
+		if err != nil {
+			return nil, err
+		}
+		for _, exp := range experiments {
+			if err := getTopologyFiles(exp.Metadata.Name, details); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -104,7 +122,7 @@ func (MMClusterFiles) GetImages(expName string, kind ImageKind) ([]ImageDetails,
 
 	for name := range details {
 		// Only return image types that were requested
-		if kind & details[name].Kind == 0 {
+		if kind&details[name].Kind == 0 {
 			continue
 		}
 
@@ -336,7 +354,6 @@ func getTopologyFiles(expName string, details map[string]ImageDetails) error {
 		return fmt.Errorf("unable to retrieve %v", expName)
 	}
 
-	
 	for _, node := range exp.Spec.Topology().Nodes() {
 		for _, drive := range node.Hardware().Drives() {
 			cmd := mmcli.NewCommand()
@@ -345,7 +362,7 @@ func getTopologyFiles(expName string, details map[string]ImageDetails) error {
 				continue
 			}
 
-			relMMPath,_ := filepath.Rel(mmFilesDirectory,drive.Image())
+			relMMPath, _ := filepath.Rel(mmFilesDirectory, drive.Image())
 
 			if len(relMMPath) == 0 {
 				relMMPath = drive.Image()
@@ -366,9 +383,10 @@ func getTopologyFiles(expName string, details map[string]ImageDetails) error {
 				}
 
 				image := ImageDetails{
-					Name:     baseName,
-					FullPath: util.GetMMFullPath(row["name"]),
-					Kind:     VM_IMAGE,
+					Name:       baseName,
+					FullPath:   util.GetMMFullPath(row["name"]),
+					Kind:       VM_IMAGE,
+					Experiment: &expName,
 				}
 
 				var err error

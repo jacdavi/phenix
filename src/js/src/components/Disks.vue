@@ -25,7 +25,12 @@
               {{ props.row.name }}
             </b-table-column>
             <b-table-column field="experiment" label="Experiment" v-slot="props">
-              {{ }}
+              {{ props.row.experiment }}
+            </b-table-column>
+            <b-table-column field="path" label="Path" centered v-slot="props">
+              <b-tooltip :label="props.row.fullPath" type="is-dark">
+                <b-icon icon="info-circle" size="is-small" />
+              </b-tooltip>
             </b-table-column>
             <b-table-column field="kind" label="Kind" v-slot="props">
               {{ props.row.kind }}

@@ -28,12 +28,12 @@ func (k ImageKind) MarshalJSON() ([]byte, error) {
 }
 
 type ImageDetails struct {
-	Kind         ImageKind `json:"kind"`
-	Name         string    `json:"name"`
-	FullPath     string    `json:"fullPath"`
-	Size         int       `json:"size"`
-	Experiment   *string   `json:"experiment"`
-	BackingImage *string   `json:"backingImage"`
+	Kind          ImageKind `json:"kind"`
+	Name          string    `json:"name"`
+	FullPath      string    `json:"fullPath"`
+	Size          int       `json:"size"`
+	Experiment    *string   `json:"experiment"`
+	BackingImages []string  `json:"backingImage"`
 }
 
 var DefaultClusterFiles ClusterFiles = new(MMClusterFiles)

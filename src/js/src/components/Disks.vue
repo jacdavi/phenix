@@ -2,6 +2,7 @@
     <div class="content">
       
       <template>
+        <hr>
         <b-field grouped position="is-right">
           <p v-if="roleAllowed('disks', 'post')" class="control">
             <b-tooltip label="Upload a disk" type="is-light is-left">
@@ -24,6 +25,9 @@
             <b-table-column field="name" label="Name" v-slot="props">
               {{ props.row.name }}
             </b-table-column>
+            <b-table-column field="kind" label="Kind" v-slot="props">
+              {{ props.row.kind }}
+            </b-table-column>
             <b-table-column field="experiment" label="Experiment" v-slot="props">
               {{ props.row.experiment }}
             </b-table-column>
@@ -32,14 +36,33 @@
                 <b-icon icon="info-circle" size="is-small" />
               </b-tooltip>
             </b-table-column>
-            <b-table-column field="kind" label="Kind" v-slot="props">
-              {{ props.row.kind }}
-            </b-table-column>
             <b-table-column field="backingImage" label="Backing Image" v-slot="props">
               {{  }}
             </b-table-column>
             <b-table-column field="size" label="Size" v-slot="props">
               {{ props.row.size | fileSize }}
+            </b-table-column>
+            <b-table-column label="Actions" width="200" centered v-slot="props">
+              <b-tooltip label="Delete" type="is-dark">
+                <button class="button is-light is-small action" @click="">
+                  <b-icon icon="trash"></b-icon>
+                </button>
+              </b-tooltip>
+              <b-tooltip label="Download" type="is-dark">
+                <button class="button is-light is-small action" @click="">
+                  <b-icon icon="download"></b-icon>
+                </button>
+              </b-tooltip>
+              <b-tooltip :label="'Create new image backed by ' + props.row.name" type="is-dark" multilined>
+                <button class="button is-light is-small action" @click="">
+                  <b-icon icon="copy"></b-icon>
+                </button>
+              </b-tooltip>
+              <b-tooltip v-if="props.row.backingImage && props.row.backingImage.length" :label="'Commit to ' + props.row.backingImage[0]" type="is-dark" multilined>
+                <button class="button is-light is-small action" @click="">
+                  <b-icon icon="file-import"></b-icon>
+                </button>
+              </b-tooltip>
             </b-table-column>
           </b-table>
           <br>

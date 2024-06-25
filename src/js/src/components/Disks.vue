@@ -36,13 +36,15 @@
                 <b-icon icon="info-circle" size="is-small" />
               </b-tooltip>
             </b-table-column>
-            <b-table-column field="backingImage" label="Backing Image" v-slot="props">
-              {{  }}
+            <b-table-column field="backingImages" label="Backing Image" v-slot="props">
+              <b-tooltip v-if="props.row.backingImages" :label="props.row.backingImages.join('\n')" type="is-dark" multilined>
+                {{ props.row.backingImages[0] }}
+              </b-tooltip>
             </b-table-column>
             <b-table-column field="size" label="Size" v-slot="props">
               {{ props.row.size | fileSize }}
             </b-table-column>
-            <b-table-column label="Actions" width="200" centered v-slot="props">
+            <b-table-column label="Actions" width="200" v-slot="props">
               <b-tooltip label="Delete" type="is-dark">
                 <button class="button is-light is-small action" @click="">
                   <b-icon icon="trash"></b-icon>
@@ -53,14 +55,19 @@
                   <b-icon icon="download"></b-icon>
                 </button>
               </b-tooltip>
-              <b-tooltip :label="'Create new image backed by ' + props.row.name" type="is-dark" multilined>
+              <b-tooltip label="Create copy" type="is-dark">
                 <button class="button is-light is-small action" @click="">
-                  <b-icon icon="copy"></b-icon>
+                  <b-icon icon="file-circle-plus"></b-icon>
                 </button>
               </b-tooltip>
-              <b-tooltip v-if="props.row.backingImage && props.row.backingImage.length" :label="'Commit to ' + props.row.backingImage[0]" type="is-dark" multilined>
+              <b-tooltip :label="'Create new backed by ' + props.row.name" type="is-dark" multilined>
                 <button class="button is-light is-small action" @click="">
-                  <b-icon icon="file-import"></b-icon>
+                  <b-icon icon="file-export"></b-icon>
+                </button>
+              </b-tooltip>
+              <b-tooltip v-if="props.row.backingImages && props.row.backingImages.length" :label="'Commit to ' + props.row.backingImages[0]" type="is-dark" multilined>
+                <button class="button is-light is-small action" @click="">
+                  <b-icon icon="code-commit"></b-icon>
                 </button>
               </b-tooltip>
             </b-table-column>
@@ -154,6 +161,10 @@
   
     a.action {
       margin-right: 5px;
+    }
+
+    .b-tooltip:after {
+      white-space: pre !important;
     }
   </style>
   

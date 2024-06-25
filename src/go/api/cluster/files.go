@@ -3,6 +3,7 @@ package cluster
 import (
 	"encoding/json"
 	"fmt"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"phenix/util"
 	"phenix/util/mm"
 	"phenix/util/mm/mmcli"
+	"phenix/util/plog"
 )
 
 type ImageKind uint8
@@ -33,7 +35,7 @@ type ImageDetails struct {
 	FullPath      string    `json:"fullPath"`
 	Size          int       `json:"size"`
 	Experiment    *string   `json:"experiment"`
-	BackingImages []string  `json:"backingImage"`
+	BackingImages []string  `json:"backingImages"`
 }
 
 var DefaultClusterFiles ClusterFiles = new(MMClusterFiles)
@@ -321,6 +323,12 @@ func getAllFiles(details map[string]ImageDetails) error {
 
 			if strings.HasSuffix(image.Name, ".qc2") || strings.HasSuffix(image.Name, ".qcow2") {
 				image.Kind = VM_IMAGE
+				backingImages, err := getBackingImageChain(image)
+				if err != nil {
+					plog.Warn("error getting backing images: %v", err)
+				} else {
+					image.BackingImages = backingImages
+				}
 			} else if strings.HasSuffix(image.Name, "_rootfs.tgz") {
 				image.Kind = CONTAINER_IMAGE
 			} else if strings.HasSuffix(image.Name, ".hdd") {
@@ -389,7 +397,12 @@ func getTopologyFiles(expName string, details map[string]ImageDetails) error {
 					Experiment: &expName,
 				}
 
-				var err error
+				backingImages, err := getBackingImageChain(image)
+				if err != nil {
+					plog.Warn("error getting backing images: %v", err)
+				} else {
+					image.BackingImages = backingImages
+				}
 
 				if image.Size, err = strconv.Atoi(row["size"]); err != nil {
 					return fmt.Errorf("getting size of file: %w", err)
@@ -416,4 +429,32 @@ func getExperimentNames() (map[string]struct{}, error) {
 	}
 
 	return expNames, nil
+}
+
+func getBackingImageChain(i ImageDetails) ([]string, error) {
+	shell := exec.Command("qemu-img", "info", i.FullPath, "--output=json", "--backing-chain")
+
+	res, err := shell.CombinedOutput()
+	if err != nil {
+		return []string{}, fmt.Errorf("error getting info (%s): %w", string(res), err)
+	}
+
+	qemuInfo := []map[string]interface{}{}
+	err = json.Unmarshal(res, &qemuInfo)
+	if err != nil {
+		return []string{}, fmt.Errorf("error  (%s): %w", string(res), err)
+	}
+
+	if len(qemuInfo) == 1 {
+		return []string{}, nil
+	}
+	images := []string{}
+	for _, q := range qemuInfo {
+		backing, ok := q["backing-filename"]
+		if !ok {
+			break
+		}
+		images = append(images, backing.(string))
+	}
+	return images, nil
 }

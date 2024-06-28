@@ -150,6 +150,7 @@ func Start(opts ...ServerOption) error {
 	api.Handle("/configs/download", weberror.ErrorHandler(DownloadConfigs)).Methods("POST", "OPTIONS")
 	api.Handle("/schemas/{version}", weberror.ErrorHandler(GetSchemaSpec)).Methods("GET", "OPTIONS")
 	api.Handle("/schemas/{kind}/{version}", weberror.ErrorHandler(GetSchema)).Methods("GET", "OPTIONS")
+
 	api.HandleFunc("/experiments", GetExperiments).Methods("GET", "OPTIONS")
 	api.HandleFunc("/experiments", CreateExperiment).Methods("POST", "OPTIONS")
 	api.Handle("/experiments/builder", weberror.ErrorHandler(CreateExperimentFromBuilder)).Methods("POST", "OPTIONS")
@@ -224,11 +225,16 @@ func Start(opts ...ServerOption) error {
 		api.HandleFunc("/experiments/{exp}/vms/{name}/files/upload", UploadMountFile).Methods("PUT", "OPTIONS").Queries("path", "{path}")
 	}
 
+	api.HandleFunc("/disks", GetDisks).Methods("GET", "OPTIONS")
+	// api.HandleFunc("/disks", UploadDisk).Methods("POST", "OPTIONS")
+	// api.HandleFunc("/disks/{disk}", DownloadDisk).Methods("GET", "OPTIONS")
+	// api.HandleFunc("/disks/{disk}", DeleteDisk).Methods("DELETE", "OPTIONS")
+
+
 	api.HandleFunc("/vms", GetAllVMs).Methods("GET", "OPTIONS")
 	api.HandleFunc("/applications", GetApplications).Methods("GET", "OPTIONS")
 	api.HandleFunc("/topologies", GetTopologies).Methods("GET", "OPTIONS")
 	api.HandleFunc("/topologies/{topo}/scenarios", GetScenarios).Methods("GET", "OPTIONS")
-	api.HandleFunc("/disks", GetDisks).Methods("GET", "OPTIONS")
 	api.HandleFunc("/hosts", GetClusterHosts).Methods("GET", "OPTIONS")
 	api.HandleFunc("/users", GetUsers).Methods("GET", "OPTIONS")
 	api.HandleFunc("/users", CreateUser).Methods("POST", "OPTIONS")

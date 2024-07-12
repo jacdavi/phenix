@@ -129,6 +129,7 @@ func Start(opts ...ServerOption) error {
 	)
 
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		plog.Warn("Unknown route requested", "route", r.RequestURI)
 		switch a := assets.(type) {
 		case *assetfs.AssetFS:
 			util.NewBinaryFileSystem(a).ServeFile(w, r, "index.html")
@@ -229,7 +230,11 @@ func Start(opts ...ServerOption) error {
 	// api.HandleFunc("/disks", UploadDisk).Methods("POST", "OPTIONS")
 	// api.HandleFunc("/disks/{disk}", DownloadDisk).Methods("GET", "OPTIONS")
 	// api.HandleFunc("/disks/{disk}", DeleteDisk).Methods("DELETE", "OPTIONS")
-
+	// api.HandleFunc("/disks/{disk}", RenameDisk).Methods("PUT", "OPTIONS")
+	// api.HandleFunc("/disks/{disk}/snapshot", SnapshotDisk).Methods("POST", "OPTIONS")
+	// api.HandleFunc("/disks/{disk}/rebase", RebaseDisk).Methods("POST", "OPTIONS")
+	// api.HandleFunc("/disks/{disk}/commit", CommitDisk).Methods("POST", "OPTIONS")
+	// api.HandleFunc("/disks/{disk}/clone", CloneDisk).Methods("POST", "OPTIONS")
 
 	api.HandleFunc("/vms", GetAllVMs).Methods("GET", "OPTIONS")
 	api.HandleFunc("/applications", GetApplications).Methods("GET", "OPTIONS")

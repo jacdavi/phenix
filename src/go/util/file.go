@@ -18,7 +18,7 @@ var (
 
 // Returns the full path relative to the minimega files directory
 func GetMMFullPath(path string) string {
-	// If there is no leading file seperator, assume a relative
+	// If there is no leading file separator, assume a relative
 	// path to the minimega files directory
 	if !strings.HasPrefix(path, "/") {
 		return filepath.Join(mmFilesDirectory, path)

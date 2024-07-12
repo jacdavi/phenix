@@ -132,7 +132,7 @@ func getAllFiles(details map[string]ImageDetails) error {
 				image.Kind = VM_IMAGE
 				backingImages, err := getBackingImageChain(image)
 				if err != nil {
-					plog.Warn("error getting backing images: %v", err)
+					plog.Warn(fmt.Sprintf("error getting backing images: %v", err))
 				} else {
 					image.BackingImages = backingImages
 				}
@@ -206,7 +206,7 @@ func getTopologyFiles(expName string, details map[string]ImageDetails) error {
 
 				backingImages, err := getBackingImageChain(image)
 				if err != nil {
-					plog.Warn("error getting backing images: %v", err)
+					plog.Warn(fmt.Sprintf("error getting backing images: %v", err))
 				} else {
 					image.BackingImages = backingImages
 				}

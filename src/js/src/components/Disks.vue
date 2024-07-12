@@ -37,38 +37,40 @@
               </b-tooltip>
             </b-table-column>
             <b-table-column field="backingImages" label="Backing Image" v-slot="props">
-              <b-tooltip v-if="props.row.backingImages" :label="props.row.backingImages.join('\n')" type="is-dark" multilined>
+              <b-tooltip v-if="props.row.backingImages" type="is-dark" size="is-large" multilined>
+                <template v-slot:content>
+                    {{ props.row.name }}
+                    <div v-for="i in props.row.backingImages">
+                      &darr;<br>
+                      {{  i  }}
+                    </div>
+                </template>
                 {{ props.row.backingImages[0] }}
               </b-tooltip>
             </b-table-column>
             <b-table-column field="size" label="Size" v-slot="props">
               {{ props.row.size | fileSize }}
             </b-table-column>
-            <b-table-column label="Actions" width="200" v-slot="props">
-              <b-tooltip label="Delete" type="is-dark">
-                <button class="button is-light is-small action" @click="">
-                  <b-icon icon="trash"></b-icon>
-                </button>
-              </b-tooltip>
-              <b-tooltip label="Download" type="is-dark">
-                <button class="button is-light is-small action" @click="">
-                  <b-icon icon="download"></b-icon>
-                </button>
-              </b-tooltip>
-              <b-tooltip label="Create copy" type="is-dark">
-                <button class="button is-light is-small action" @click="">
-                  <b-icon icon="file-circle-plus"></b-icon>
-                </button>
-              </b-tooltip>
-              <b-tooltip :label="'Create new backed by ' + props.row.name" type="is-dark" multilined>
-                <button class="button is-light is-small action" @click="">
-                  <b-icon icon="file-export"></b-icon>
-                </button>
-              </b-tooltip>
-              <b-tooltip v-if="props.row.backingImages && props.row.backingImages.length" :label="'Commit to ' + props.row.backingImages[0]" type="is-dark" multilined>
-                <button class="button is-light is-small action" @click="">
-                  <b-icon icon="code-commit"></b-icon>
-                </button>
+            <b-table-column label="" width="20" v-slot="props">
+              <b-tooltip label="Actions" type="is-dark">
+                <b-dropdown aria-role="list">
+                  <template #trigger>
+                    <button class="button is-light is-small action">
+                      <b-icon icon="ellipsis-v" custom-class="fa-fw fa-2xs"></b-icon>
+                    </button>
+                  </template>
+
+
+                  <b-dropdown-item aria-role="listitem">Snapshot</b-dropdown-item>
+                  <b-dropdown-item aria-role="listitem">Commit</b-dropdown-item>
+                  <b-dropdown-item aria-role="listitem">Rebase</b-dropdown-item>
+                  <b-dropdown-item aria-role="listitem">Clone</b-dropdown-item>
+                  <hr class="dropdown-divider">
+                  <b-dropdown-item aria-role="listitem">Download</b-dropdown-item>
+                  <b-dropdown-item aria-role="listitem">Rename</b-dropdown-item>
+                  <b-dropdown-item aria-role="listitem">Delete</b-dropdown-item>
+                </b-dropdown>
+
               </b-tooltip>
             </b-table-column>
           </b-table>
@@ -80,7 +82,7 @@
           </b-field>
         </div>
       </template>
-      <b-loading :is-full-page="true" :active.sync="isWaiting" :can-cancel="false"></b-loading>
+      <!-- <b-loading :is-full-page="true" :active.sync="isWaiting" :can-cancel="false"></b-loading> -->
     </div>
   </template>
   
@@ -113,28 +115,29 @@
   
       methods: {
         updateDisks () {
-        this.$http.get( 'disks').then(
-          response => {
-            response.json().then(
-              state => {
-                console.log(state)
-                if ( state.disks.length == 0 ) {
-                  this.isWaiting = true;
-                } else {
-                  for ( let i = 0; i < state.disks.length; i++ ) {
-                    this.disks.push( state.disks[ i ]);
-                  }
+          this.$http.get( 'disks' ).then(
+            response => {
+              console.log(response)
+              response.json().then(
+                state => {
+                  console.log(state)
+                  if ( state.disks.length == 0 ) {
+                    this.isWaiting = true;
+                  } else {
+                    for ( let i = 0; i < state.disks.length; i++ ) {
+                      this.disks.push( state.disks[ i ]);
+                    }
 
-                  this.disks.sort()
-                  this.isWaiting = false;
+                    this.disks.sort()
+                    this.isWaiting = false;
+                  }
                 }
-              }
-            );
-          }, err => {
-            this.errorNotification(err);
-          }
-        );
-      },
+              );
+            }, err => {
+              this.errorNotification(err);
+            }
+          );
+        },
       },
   
       data() {
@@ -155,16 +158,12 @@
   </script>
   
   <style scoped>
-    button.action {
-      margin-right: 5px;
-    }
-  
-    a.action {
-      margin-right: 5px;
-    }
 
     .b-tooltip:after {
       white-space: pre !important;
+    }
+    .dropdown-item {
+      color: black !important;
     }
   </style>
   

@@ -1284,9 +1284,6 @@
               case  'commit': {
                 for ( let i = 0; i < vms.length; i++ ) {
                   if  ( vms[i].name == vm[ 1 ] ) {
-                    console.log(vm)
-                    console.log(vms)
-                    console.log(msg)
                     vms[i].busy = false;
                     let disk  = msg.result.disk;
                 

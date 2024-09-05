@@ -35,14 +35,21 @@ func GetDisks(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	disks, err := cluster.GetImages(expName, defaultDiskType)
+	disks, err := cluster.GetImages(expName)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	allowed := []cluster.ImageDetails{}
+	filtered := []cluster.ImageDetails{}
 	for _, disk := range disks {
+		if disk.Kind&defaultDiskType != 0 {
+			filtered = append(filtered, disk)
+		}
+	}
+	
+	allowed := []cluster.ImageDetails{}
+	for _, disk := range filtered {
 		if role.Allowed("disks", "list", disk.Name) {
 			allowed = append(allowed, disk)
 		}

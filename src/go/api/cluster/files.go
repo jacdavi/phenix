@@ -10,6 +10,7 @@ import (
 
 	"phenix/api/experiment"
 	"phenix/util"
+	"phenix/util/mm"
 	"phenix/util/mm/mmcli"
 	"phenix/util/plog"
 )
@@ -35,6 +36,8 @@ type ImageDetails struct {
 	Size          int       `json:"size"`
 	Experiment    *string   `json:"experiment"`
 	BackingImages []string  `json:"backingImages"`
+	InUse		  bool		`json:"inUse"`
+	BackingFor	  string	`json:"backingFor"`
 }
 
 var DefaultClusterFiles ClusterFiles = new(MMClusterFiles)
@@ -46,20 +49,20 @@ type ClusterFiles interface {
 	// Assumes container filesystems have `_rootfs.tgz` suffix.
 	// Alternatively, we could force the use of subdirectories w/ known names
 	// (such as `base-images` and `container-fs`).
-	GetImages(expName string, kind ImageKind) ([]ImageDetails, error)
+	GetImages(expName string) ([]ImageDetails, error)
 }
 
-func GetImages(expName string, kind ImageKind) ([]ImageDetails, error) {
-	return DefaultClusterFiles.GetImages(expName, kind)
+func GetImages(expName string) ([]ImageDetails, error) {
+	return DefaultClusterFiles.GetImages(expName)
 }
 
 type MMClusterFiles struct{}
 
 // Gets images in base directory, plus any images that expName references
 // if expName is empty, will check all known experiments
-func (MMClusterFiles) GetImages(expName string, kind ImageKind) ([]ImageDetails, error) {
+func (MMClusterFiles) GetImages(expName string) ([]ImageDetails, error) {
 	// Using a map here to weed out duplicates.
-	details := make(map[string]ImageDetails)
+	details := make(map[string]*ImageDetails)
 
 	// Add all the files from the minimega files directory
 	if err := getAllFiles(details); err != nil {
@@ -83,22 +86,36 @@ func (MMClusterFiles) GetImages(expName string, kind ImageKind) ([]ImageDetails,
 		}
 	}
 
+	runningVms := mm.GetVMInfo()
+
+	for name := range details {
+		if len(details[name].BackingImages) > 0 {
+			details[details[name].BackingImages[0]].BackingFor = name
+		}
+		for _, vm := range runningVms {
+			if strings.ReplaceAll(vm.Disk, util.GetMMFilesDirectory(), "") == name {
+				details[name].InUse = true
+				for _, backing := range details[name].BackingImages {
+					details[backing].InUse = true
+				}
+				break
+			}
+		}
+
+	}
+
 	var images []ImageDetails
 
 	for name := range details {
-		// Only return image types that were requested
-		if kind&details[name].Kind == 0 {
-			continue
-		}
-
-		images = append(images, details[name])
+		images = append(images, *details[name])
 	}
+
 
 	return images, nil
 }
 
 // Get all image files from the minimega files directory
-func getAllFiles(details map[string]ImageDetails) error {
+func getAllFiles(details map[string]*ImageDetails) error {
 
 	// First get file listings from mesh, then from headnode.
 	commands := []string{"mesh send all file list", "file list"}
@@ -153,7 +170,7 @@ func getAllFiles(details map[string]ImageDetails) error {
 				return fmt.Errorf("getting size of file: %w", err)
 			}
 
-			details[image.Name] = image
+			details[image.Name] = &image
 		}
 	}
 
@@ -162,7 +179,7 @@ func getAllFiles(details map[string]ImageDetails) error {
 }
 
 // Retrieves all the unique image names defined in the topology
-func getTopologyFiles(expName string, details map[string]ImageDetails) error {
+func getTopologyFiles(expName string, details map[string]*ImageDetails) error {
 	// Retrieve the experiment
 	exp, err := experiment.Get(expName)
 	if err != nil {
@@ -215,7 +232,7 @@ func getTopologyFiles(expName string, details map[string]ImageDetails) error {
 					return fmt.Errorf("getting size of file: %w", err)
 				}
 
-				details[image.Name] = image
+				details[image.Name] = &image
 			}
 		}
 	}

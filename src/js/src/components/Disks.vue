@@ -28,9 +28,6 @@
             <b-table-column field="kind" label="Kind" v-slot="props">
               {{ props.row.kind }}
             </b-table-column>
-            <b-table-column field="experiment" label="Experiment" v-slot="props">
-              {{ props.row.experiment }}
-            </b-table-column>
             <b-table-column field="path" label="Path" centered v-slot="props">
               <b-tooltip :label="props.row.fullPath" type="is-dark">
                 <b-icon icon="info-circle" size="is-small" />
@@ -47,6 +44,14 @@
                 </template>
                 {{ props.row.backingImages[0] }}
               </b-tooltip>
+            </b-table-column>
+            <b-table-column field="backingFor" label="Parent" centered v-slot="props">
+              <b-tooltip :label="props.row.backingFor" type="is-dark">
+                <b-icon v-if="props.row.backingFor" icon="chevron-circle-up" size="is-small" />
+              </b-tooltip>
+            </b-table-column>
+            <b-table-column field="inUse" label="In Use" centered v-slot="props">
+                <b-icon v-if="props.row.inUse" icon="play-circle" size="is-small" />
             </b-table-column>
             <b-table-column field="size" label="Size" v-slot="props">
               {{ props.row.size | fileSize }}

@@ -86,26 +86,26 @@ func (MMClusterFiles) GetImages(expName string) ([]ImageDetails, error) {
 		}
 	}
 
-	runningVms := mm.GetVMInfo()
-
 	for name := range details {
 		if len(details[name].BackingImages) > 0 {
 			details[details[name].BackingImages[0]].BackingFor = name
 		}
-		for _, vm := range runningVms {
-			if strings.ReplaceAll(vm.Disk, util.GetMMFilesDirectory(), "") == name {
-				details[name].InUse = true
-				for _, backing := range details[name].BackingImages {
-					details[backing].InUse = true
-				}
-				break
+	}
+
+	baseDiskDir := util.GetMMFilesDirectory()
+	for _, vm := range mm.GetVMInfo() {
+		// TODO: only accounts for first disk for each vm
+		diskName := strings.TrimPrefix(vm.Disk, baseDiskDir)
+
+		if image, ok := details[diskName]; ok {
+			image.InUse = true
+			for _, backing := range image.BackingImages {
+				details[backing].InUse = true
 			}
 		}
-
 	}
 
 	var images []ImageDetails
-
 	for name := range details {
 		images = append(images, *details[name])
 	}

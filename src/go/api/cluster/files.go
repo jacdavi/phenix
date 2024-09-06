@@ -92,10 +92,9 @@ func (MMClusterFiles) GetImages(expName string) ([]ImageDetails, error) {
 		}
 	}
 
-	baseDiskDir := util.GetMMFilesDirectory()
 	for _, vm := range mm.GetVMInfo() {
 		// TODO: only accounts for first disk for each vm
-		diskName := strings.TrimPrefix(vm.Disk, baseDiskDir)
+		diskName := strings.TrimPrefix(vm.Disk, mmFilesDirectory)
 
 		if image, ok := details[diskName]; ok {
 			image.InUse = true

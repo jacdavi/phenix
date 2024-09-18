@@ -21,7 +21,7 @@ func GetDisks(w http.ResponseWriter, r *http.Request) {
 		query           = r.URL.Query()
 		expName         = query.Get("expName")
 		diskType        = query.Get("diskType")
-		defaultDiskType = cluster.VM_IMAGE | cluster.CONTAINER_IMAGE
+		defaultDiskType = cluster.VM_IMAGE | cluster.CONTAINER_IMAGE | cluster.ISO_IMAGE | cluster.UNKNOWN
 	)
 
 	if !role.Allowed("disks", "list") {
@@ -30,9 +30,11 @@ func GetDisks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(diskType) > 0 {
-		if strings.Contains(diskType, "ISO") {
-			defaultDiskType = cluster.ISO_IMAGE
+		defaultDiskType = 0
+		for  _, s := range strings.Split(diskType, ",") {
+			defaultDiskType |= cluster.StringToKind(s)
 		}
+	
 	}
 
 	disks, err := cluster.GetImages(expName)

@@ -24,24 +24,51 @@ const (
 )
 
 func (k ImageKind) MarshalJSON() ([]byte, error) {
-	return json.Marshal([]string{"Unknown", "VM", "Container", "ISO"}[k-1])
+	return json.Marshal(k.String())
+}
+
+func (k ImageKind) String() string {
+	switch k {
+	case VM_IMAGE:
+		return "VM"
+	case CONTAINER_IMAGE:
+		return "Container"
+	case ISO_IMAGE:
+		return "ISO"
+	default:
+		return "Unknown"
+
+	}
+}
+
+func StringToKind(kind string) ImageKind {
+	switch strings.ToLower(kind) {
+	case "vm":
+		return VM_IMAGE
+	case "iso":
+		return ISO_IMAGE
+	case "container":
+		return CONTAINER_IMAGE
+	default:
+		return UNKNOWN
+	}
 }
 
 type ImageDetails struct {
 	Kind          ImageKind `json:"kind"`
 	Name          string    `json:"name"`
 	FullPath      string    `json:"fullPath"`
-	Size          string     `json:"size"`
-	VirtualSize   string     `json:"virtualSize"`
+	Size          string    `json:"size"`
+	VirtualSize   string    `json:"virtualSize"`
 	Experiment    *string   `json:"experiment"`
 	BackingImages []string  `json:"backingImages"`
 	InUse         bool      `json:"inUse"`
 }
 
 var (
-	DefaultClusterFiles ClusterFiles = new(MMClusterFiles)
-	mmFilesDirectory = util.GetMMFilesDirectory()
-	knownImageExtensions = []string{".qcow2", ".qc2", "_rootfs.tgz", ".hdd", ".iso"}
+	DefaultClusterFiles  ClusterFiles = new(MMClusterFiles)
+	mmFilesDirectory                  = util.GetMMFilesDirectory()
+	knownImageExtensions              = []string{".qcow2", ".qc2", "_rootfs.tgz", ".hdd", ".iso"}
 )
 
 type ClusterFiles interface {
@@ -87,7 +114,6 @@ func (MMClusterFiles) GetImages(expName string) ([]ImageDetails, error) {
 		}
 	}
 
-	plog.Info("GOT", "images", details)
 	var images []ImageDetails
 	for name := range details {
 		images = append(images, details[name])
@@ -109,7 +135,6 @@ func getAllFiles(details map[string]ImageDetails) error {
 		cmd.Command = command
 
 		for _, row := range mmcli.RunTabular(cmd) {
-			plog.Info("FILE", "file", row["name"])
 			if _, ok := details[row["name"]]; row["dir"] == "" && !ok {
 				for _, image := range resolveImage(filepath.Join(mmFilesDirectory, row["name"])) {
 					if _, ok := details[image.Name]; !ok {
@@ -137,10 +162,12 @@ func getTopologyFiles(expName string, details map[string]ImageDetails) error {
 			if len(drive.Image()) == 0 {
 				continue
 			}
-
-			relMMPath, _ := filepath.Rel(mmFilesDirectory, drive.Image())
-			if _, ok := details[filepath.Base(relMMPath)]; !ok {
-				for _, image := range resolveImage(relMMPath) {
+			path := drive.Image()
+			if !filepath.IsAbs(path) {
+				path = filepath.Join(mmFilesDirectory, path)
+			}
+			if _, ok := details[filepath.Base(path)]; !ok {
+				for _, image := range resolveImage(path) {
 					if _, ok := details[image.Name]; !ok {
 						details[image.Name] = image
 					}
@@ -152,46 +179,49 @@ func getTopologyFiles(expName string, details map[string]ImageDetails) error {
 	return nil
 }
 
-func resolveImage(path string) ([]ImageDetails) {
+func resolveImage(path string) []ImageDetails {
 	imageDetails := []ImageDetails{}
-
 
 	knownFormat := false
 	for _, f := range knownImageExtensions {
-		if filepath.Ext(path) == f {
+		if strings.HasSuffix(path, f) {
 			knownFormat = true
 			break
 		}
 	}
 	if !knownFormat {
-		plog.Debug("File didn't match know image extensions: %s", path)
+		plog.Debug("file didn't match know image extensions: %s", "path", path)
 		return imageDetails
 	}
 
-
 	cmd := mmcli.NewCommand()
 	cmd.Command = fmt.Sprintf("disk info %v recursive", path)
-	plog.Info("CMD", "cmd", cmd.Command)
 	images := mmcli.RunTabular(cmd)
-	plog.Info("FILE", "images", images)
 
 	for i, row := range images {
 		image := ImageDetails{
-			Name: filepath.Base(row["image"]),
-			FullPath: row["image"],
-			Size: row["disksize"],
+			Name:        filepath.Base(row["image"]),
+			FullPath:    row["image"],
+			Size:        row["disksize"],
 			VirtualSize: row["virtualsize"],
 		}
 
 		if row["format"] == "qcow2" {
 			image.Kind = VM_IMAGE
+			backingChain := []string{}
+			for _, backing := range images[i:] {
+				backingChain = append(backingChain, filepath.Base(backing["image"]))
+			}
+			image.BackingImages = backingChain
 		} else if strings.HasSuffix(image.Name, "_rootfs.tgz") {
 			image.Kind = CONTAINER_IMAGE
 		} else if strings.HasSuffix(image.Name, ".hdd") {
 			image.Kind = VM_IMAGE
 		} else if strings.HasSuffix(image.Name, ".iso") {
 			image.Kind = ISO_IMAGE
-		} 
+		} else {
+			image.Kind = UNKNOWN
+		}
 
 		var err error
 		image.InUse, err = strconv.ParseBool(row["inuse"])
@@ -199,11 +229,6 @@ func resolveImage(path string) ([]ImageDetails) {
 			plog.Warn("could not determine if image in use", "image", path)
 		}
 
-		backingChain := []string{}
-		for _, backing := range images[i:] {
-			backingChain = append(backingChain, filepath.Base(backing["image"]))
-		}
-		image.BackingImages = backingChain
 		imageDetails = append(imageDetails, image)
 	}
 

@@ -1,4 +1,4 @@
-package cluster
+package disk
 
 import (
 	"encoding/json"
@@ -11,23 +11,24 @@ import (
 	"phenix/util"
 	"phenix/util/mm/mmcli"
 	"phenix/util/plog"
+
 )
 
-type ImageKind uint8
+type Kind uint8
 type CopyStatus func(float64)
 
 const (
-	UNKNOWN ImageKind = 1 << iota
+	UNKNOWN Kind = 1 << iota
 	VM_IMAGE
 	CONTAINER_IMAGE
 	ISO_IMAGE
 )
 
-func (k ImageKind) MarshalJSON() ([]byte, error) {
+func (k Kind) MarshalJSON() ([]byte, error) {
 	return json.Marshal(k.String())
 }
 
-func (k ImageKind) String() string {
+func (k Kind) String() string {
 	switch k {
 	case VM_IMAGE:
 		return "VM"
@@ -41,7 +42,7 @@ func (k ImageKind) String() string {
 	}
 }
 
-func StringToKind(kind string) ImageKind {
+func StringToKind(kind string) Kind {
 	switch strings.ToLower(kind) {
 	case "vm":
 		return VM_IMAGE
@@ -54,8 +55,8 @@ func StringToKind(kind string) ImageKind {
 	}
 }
 
-type ImageDetails struct {
-	Kind          ImageKind `json:"kind"`
+type Details struct {
+	Kind          Kind `json:"kind"`
 	Name          string    `json:"name"`
 	FullPath      string    `json:"fullPath"`
 	Size          string    `json:"size"`
@@ -66,31 +67,58 @@ type ImageDetails struct {
 }
 
 var (
-	DefaultClusterFiles  ClusterFiles = new(MMClusterFiles)
+	DefaultDiskFiles  DiskFiles = new(MMDiskFiles)
 	mmFilesDirectory                  = util.GetMMFilesDirectory()
 	knownImageExtensions              = []string{".qcow2", ".qc2", "_rootfs.tgz", ".hdd", ".iso"}
 )
 
-type ClusterFiles interface {
+type DiskFiles interface {
 	// Get list of VM disk images, container filesystems, or both.
 	// Assumes disk images have `.qc2` or `.qcow2` extension.
 	// Assumes container filesystems have `_rootfs.tgz` suffix.
 	// Alternatively, we could force the use of subdirectories w/ known names
 	// (such as `base-images` and `container-fs`).
-	GetImages(expName string) ([]ImageDetails, error)
+	GetImages(expName string) ([]Details, error)
+
+	CommitDisk(path string) error
+
+	SnapshotDisk(src, dst string) error
 }
 
-func GetImages(expName string) ([]ImageDetails, error) {
-	return DefaultClusterFiles.GetImages(expName)
+func GetImages(expName string) ([]Details, error) {
+	return DefaultDiskFiles.GetImages(expName)
 }
 
-type MMClusterFiles struct{}
+func CommitDisk(path string) error {
+	return DefaultDiskFiles.CommitDisk(path)
+}
+
+func SnapshotDisk(src, dst string) error {
+	return DefaultDiskFiles.SnapshotDisk(src, dst)
+}
+
+type MMDiskFiles struct{}
+
+
+func (MMDiskFiles) CommitDisk(path string) error {
+	cmd := mmcli.NewCommand()
+	cmd.Command = fmt.Sprintf("disk commit %s", path)
+	_, err := mmcli.SingleDataResponse(mmcli.Run(cmd))
+	return err
+}
+
+func (MMDiskFiles) SnapshotDisk(src, dst string) error {
+	cmd := mmcli.NewCommand()
+	cmd.Command = fmt.Sprintf("disk snapshot %s %s", src, dst)
+	_, err := mmcli.SingleDataResponse(mmcli.Run(cmd))
+	return err
+}
 
 // Gets images in base directory, plus any images that expName references
 // if expName is empty, will check all known experiments
-func (MMClusterFiles) GetImages(expName string) ([]ImageDetails, error) {
+func (MMDiskFiles) GetImages(expName string) ([]Details, error) {
 	// Using a map here to weed out duplicates.
-	details := make(map[string]ImageDetails)
+	details := make(map[string]Details)
 
 	// Add all the files from the minimega files directory
 	if err := getAllFiles(details); err != nil {
@@ -114,7 +142,7 @@ func (MMClusterFiles) GetImages(expName string) ([]ImageDetails, error) {
 		}
 	}
 
-	var images []ImageDetails
+	var images []Details
 	for name := range details {
 		images = append(images, details[name])
 	}
@@ -123,7 +151,7 @@ func (MMClusterFiles) GetImages(expName string) ([]ImageDetails, error) {
 }
 
 // Get all image files from the minimega files directory
-func getAllFiles(details map[string]ImageDetails) error {
+func getAllFiles(details map[string]Details) error {
 
 	// First get file listings from mesh, then from headnode.
 	commands := []string{"mesh send all file list", "file list"}
@@ -150,7 +178,7 @@ func getAllFiles(details map[string]ImageDetails) error {
 }
 
 // Retrieves all the unique image names defined in the topology
-func getTopologyFiles(expName string, details map[string]ImageDetails) error {
+func getTopologyFiles(expName string, details map[string]Details) error {
 	// Retrieve the experiment
 	exp, err := experiment.Get(expName)
 	if err != nil {
@@ -179,8 +207,8 @@ func getTopologyFiles(expName string, details map[string]ImageDetails) error {
 	return nil
 }
 
-func resolveImage(path string) []ImageDetails {
-	imageDetails := []ImageDetails{}
+func resolveImage(path string) []Details {
+	imageDetails := []Details{}
 
 	knownFormat := false
 	for _, f := range knownImageExtensions {
@@ -199,7 +227,7 @@ func resolveImage(path string) []ImageDetails {
 	images := mmcli.RunTabular(cmd)
 
 	for i, row := range images {
-		image := ImageDetails{
+		image := Details{
 			Name:        filepath.Base(row["image"]),
 			FullPath:    row["image"],
 			Size:        row["disksize"],
@@ -209,7 +237,7 @@ func resolveImage(path string) []ImageDetails {
 		if row["format"] == "qcow2" {
 			image.Kind = VM_IMAGE
 			backingChain := []string{}
-			for _, backing := range images[i:] {
+			for _, backing := range images[i+1:] {
 				backingChain = append(backingChain, filepath.Base(backing["image"]))
 			}
 			image.BackingImages = backingChain

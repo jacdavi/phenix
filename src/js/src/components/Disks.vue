@@ -38,7 +38,7 @@
             <p class="title is-5">Backing Chain</p>
             <div style="text-align: center;">
               <b>{{ detailsModal.disk.name }}</b>
-              <div v-for="i in detailsModal.disk.backingImages.slice().reverse()">
+              <div v-for="i in detailsModal.disk.backingImages">
                 &darr;<br>
                 {{ i }}
               </div>

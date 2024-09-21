@@ -1,7 +1,6 @@
 package disk
 
 import (
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -9,67 +8,13 @@ import (
 
 	"phenix/api/experiment"
 	"phenix/util"
+	"phenix/util/mm"
 	"phenix/util/mm/mmcli"
 	"phenix/util/plog"
-
 )
-
-type Kind uint8
-type CopyStatus func(float64)
-
-const (
-	UNKNOWN Kind = 1 << iota
-	VM_IMAGE
-	CONTAINER_IMAGE
-	ISO_IMAGE
-)
-
-func (k Kind) MarshalJSON() ([]byte, error) {
-	return json.Marshal(k.String())
-}
-
-func (k Kind) String() string {
-	switch k {
-	case VM_IMAGE:
-		return "VM"
-	case CONTAINER_IMAGE:
-		return "Container"
-	case ISO_IMAGE:
-		return "ISO"
-	default:
-		return "Unknown"
-
-	}
-}
-
-func StringToKind(kind string) Kind {
-	switch strings.ToLower(kind) {
-	case "vm":
-		return VM_IMAGE
-	case "iso":
-		return ISO_IMAGE
-	case "container":
-		return CONTAINER_IMAGE
-	default:
-		return UNKNOWN
-	}
-}
-
-type Details struct {
-	Kind          Kind `json:"kind"`
-	Name          string    `json:"name"`
-	FullPath      string    `json:"fullPath"`
-	Size          string    `json:"size"`
-	VirtualSize   string    `json:"virtualSize"`
-	Experiment    *string   `json:"experiment"`
-	BackingImages []string  `json:"backingImages"`
-	InUse         bool      `json:"inUse"`
-}
 
 var (
-	DefaultDiskFiles  DiskFiles = new(MMDiskFiles)
-	mmFilesDirectory                  = util.GetMMFilesDirectory()
-	knownImageExtensions              = []string{".qcow2", ".qc2", "_rootfs.tgz", ".hdd", ".iso"}
+	mmFilesDirectory = util.GetMMFilesDirectory()
 )
 
 type DiskFiles interface {
@@ -85,20 +30,8 @@ type DiskFiles interface {
 	SnapshotDisk(src, dst string) error
 }
 
-func GetImages(expName string) ([]Details, error) {
-	return DefaultDiskFiles.GetImages(expName)
-}
-
-func CommitDisk(path string) error {
-	return DefaultDiskFiles.CommitDisk(path)
-}
-
-func SnapshotDisk(src, dst string) error {
-	return DefaultDiskFiles.SnapshotDisk(src, dst)
-}
 
 type MMDiskFiles struct{}
-
 
 func (MMDiskFiles) CommitDisk(path string) error {
 	cmd := mmcli.NewCommand()
@@ -164,7 +97,7 @@ func getAllFiles(details map[string]Details) error {
 
 		for _, row := range mmcli.RunTabular(cmd) {
 			if _, ok := details[row["name"]]; row["dir"] == "" && !ok {
-				for _, image := range resolveImage(filepath.Join(mmFilesDirectory, row["name"])) {
+				for _, image := range resolveImage(row["host"], filepath.Join(mmFilesDirectory, row["name"])) {
 					if _, ok := details[image.Name]; !ok {
 						details[image.Name] = image
 					}
@@ -185,6 +118,7 @@ func getTopologyFiles(expName string, details map[string]Details) error {
 		return fmt.Errorf("unable to retrieve %v", expName)
 	}
 
+	headnode := mm.Headnode()
 	for _, node := range exp.Spec.Topology().Nodes() {
 		for _, drive := range node.Hardware().Drives() {
 			if len(drive.Image()) == 0 {
@@ -194,8 +128,9 @@ func getTopologyFiles(expName string, details map[string]Details) error {
 			if !filepath.IsAbs(path) {
 				path = filepath.Join(mmFilesDirectory, path)
 			}
+			
 			if _, ok := details[filepath.Base(path)]; !ok {
-				for _, image := range resolveImage(path) {
+				for _, image := range resolveImage(headnode, path) {
 					if _, ok := details[image.Name]; !ok {
 						details[image.Name] = image
 					}
@@ -207,7 +142,7 @@ func getTopologyFiles(expName string, details map[string]Details) error {
 	return nil
 }
 
-func resolveImage(path string) []Details {
+func resolveImage(host, path string) []Details {
 	imageDetails := []Details{}
 
 	knownFormat := false
@@ -228,6 +163,7 @@ func resolveImage(path string) []Details {
 
 	for i, row := range images {
 		image := Details{
+			Host:		 host,
 			Name:        filepath.Base(row["image"]),
 			FullPath:    row["image"],
 			Size:        row["disksize"],

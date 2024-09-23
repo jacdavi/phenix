@@ -168,6 +168,7 @@ func resolveImage(host, path string) []Details {
 			FullPath:    row["image"],
 			Size:        row["disksize"],
 			VirtualSize: row["virtualsize"],
+			BackingImages: []string{},
 		}
 
 		if row["format"] == "qcow2" {

@@ -98,7 +98,7 @@ func CommitDisk(w http.ResponseWriter, r *http.Request) {
 
 // POST /disks/snapshot?src={src}&dst={dst}
 // src should be absolute
-// dst may be absolute, but will be put in same dir if not. Extension will match src if not provided
+// dst may be absolute, but will be put in same dir as src if not. Extension will be set to qcow2
 func SnapshotDisk(w http.ResponseWriter, r *http.Request) {
 	plog.Debug("HTTP handler called", "handler", "CommitDisk")
 	role := r.Context().Value("role").(rbac.Role)
@@ -109,8 +109,8 @@ func SnapshotDisk(w http.ResponseWriter, r *http.Request) {
 		dst = filepath.Join(filepath.Dir(src), dst)
 	}
 
-	if filepath.Ext(dst) == "" {
-		dst = dst + filepath.Ext(src)
+	if !strings.HasSuffix(dst, ".qcow2") && !strings.HasSuffix(dst, ".qc2") {
+		dst = dst + ".qcow2"
 	}
 
 	if !role.Allowed("disks", "post", dst[strings.LastIndex(dst, "/")+1:]) {

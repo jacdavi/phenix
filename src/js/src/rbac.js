@@ -10,8 +10,6 @@ let roleAllowed = (role, resource, verb, ...names) => {
     names = names.filter((n) => n)
 
     let k = [role.name, resource, verb, names].join("$")
-    console.log(cache)
-    console.log(names)
     if (cache.has(k)) {
       return cache.get(k)
     }

@@ -52,50 +52,40 @@
           <div v-if="roleAllowed('disks', 'post', detailsModal.disk.name)" class="actions">
             <hr>
             <p class="title is-5">Actions</p>
-            <b-button type="is-text" expanded @click="snapshotDisk(detailsModal.disk.fullPath)">
+            <b-button type="is-text" expanded @click="snapshotDisk(detailsModal.disk.fullPath)" :disabled="shouldDisableAction('snapshot')">
               <b>Snapshot</b> - Creates a new image backed by this image
             </b-button>
             <hr class="action-separator">
-            <b-button type="is-text" expanded @click="commitDisk(detailsModal.disk.fullPath)">
+            <b-button type="is-text" expanded @click="commitDisk(detailsModal.disk.fullPath)" :disabled="shouldDisableAction('commit')">
               <b>Commit</b> - Commits change in this image to its backing image
             </b-button>
             <hr class="action-separator">
-            <b-button type="is-text" expanded>
+            <b-button type="is-text" expanded :disabled="shouldDisableAction('rebase')">
               <b>Rebase</b> - Updates image and rebases onto a different backing image
             </b-button>
             <hr class="action-separator">
-            <b-button type="is-text" expanded>
+            <b-button type="is-text" expanded :disabled="shouldDisableAction('set-backing')">
               <b>Set Backing</b> - Sets the backing file without changing image
             </b-button>
             <hr class="action-separator">
-            <b-button type="is-text" expanded>
+            <b-button type="is-text" expanded :disabled="shouldDisableAction('clone')">
               <b>Clone</b>
             </b-button>
             <hr class="action-separator">
-            <b-button type="is-text" expanded>
+            <b-button type="is-text" expanded :disabled="shouldDisableAction('download')">
               <b>Download</b>
             </b-button>
             <hr class="action-separator">
-            <b-button type="is-text" expanded>
+            <b-button type="is-text" expanded :disabled="shouldDisableAction('rename')">
               <b>Rename</b>
             </b-button>
             <hr class="action-separator">
-            <b-button type="is-text" expanded>
+            <b-button type="is-text" expanded :disabled="shouldDisableAction('delete')">
               <b>Delete</b>
             </b-button>
           </div>
         </section>
       </div>
-
-<!-- <b-dropdown-item aria-role="listitem">Snapshot</b-dropdown-item>
-<b-dropdown-item aria-role="listitem">Commit</b-dropdown-item>
-<b-dropdown-item aria-role="listitem">Rebase</b-dropdown-item>
-<b-dropdown-item aria-role="listitem">Clone</b-dropdown-item>
-<hr class="dropdown-divider">
-<b-dropdown-item aria-role="listitem">Download</b-dropdown-item>
-<b-dropdown-item aria-role="listitem">Rename</b-dropdown-item>
-<b-dropdown-item aria-role="listitem">Delete</b-dropdown-item>
- -->
     </b-modal>
     <template>
       <hr>
@@ -199,11 +189,30 @@ export default {
             err => this.errorNotification(err)
           )
     },
+    shouldDisableAction(action) {
+      let disk = this.detailsModal.disk
+      switch (action) {
+        case "snapshot":
+          return disk.inUse || disk.kind != "VM"
+        case "commit":
+          return disk.inUse || (disk.backingImages && disk.backingImages.length == 0) || disk.kind != "VM"
+        case "rebase":
+        case "set-backing":
+          return disk.inUse || disk.kind != "VM"
+        case "delete":
+        case "rename":
+          return disk.inUse
+        case "clone":
+        case "download":
+        default:
+          return false
+      }
+    },
     commitDisk(path) {
       console.log(path)
       this.$buefy.dialog.confirm({
         message: "Are you sure you want to commit this disk? The disk will remain unchanged, but its backing image will contain all data from this disk.",
-        onConfirm: this.actionWrapper(`disks/commit?path=${path}`)
+        onConfirm: () => this.actionWrapper(`disks/commit?path=${path}`)
       })
     },
     snapshotDisk(path) {

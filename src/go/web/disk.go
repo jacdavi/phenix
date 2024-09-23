@@ -9,6 +9,7 @@ import (
 	"phenix/web/rbac"
 	"phenix/web/util"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/gorilla/mux"
@@ -119,6 +120,35 @@ func SnapshotDisk(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := disk.SnapshotDisk(src, dst)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// POST /disks/rebase?src={src}&dst={dst}&unsafe={unsafe}
+// src and dst should be absolute
+func RebaseDisk(w http.ResponseWriter, r *http.Request) {
+	plog.Debug("HTTP handler called", "handler", "CommitDisk")
+	role := r.Context().Value("role").(rbac.Role)
+	src := mux.Vars(r)["src"]
+	dst := mux.Vars(r)["dst"]
+	unsafe, err := strconv.ParseBool(mux.Vars(r)["unsafe"])
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if !role.Allowed("disks", "post", src[strings.LastIndex(src, "/")+1:]) {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	err = disk.RebaseDisk(src, dst, unsafe)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

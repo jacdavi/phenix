@@ -26,8 +26,8 @@ type DiskFiles interface {
 	GetImages(expName string) ([]Details, error)
 
 	CommitDisk(path string) error
-
 	SnapshotDisk(src, dst string) error
+	RebaseDisk(src, dst string, unsafe bool) error
 }
 
 
@@ -43,6 +43,17 @@ func (MMDiskFiles) CommitDisk(path string) error {
 func (MMDiskFiles) SnapshotDisk(src, dst string) error {
 	cmd := mmcli.NewCommand()
 	cmd.Command = fmt.Sprintf("disk snapshot %s %s", src, dst)
+	_, err := mmcli.SingleDataResponse(mmcli.Run(cmd))
+	return err
+}
+
+func (MMDiskFiles) RebaseDisk(src, dst string, unsafe bool) error {
+	cmd := mmcli.NewCommand()
+	if unsafe {
+		cmd.Command = fmt.Sprintf("disk set-backing %s %s", src, dst)
+	} else {
+		cmd.Command = fmt.Sprintf("disk rebase %s %s", src, dst)
+	}
 	_, err := mmcli.SingleDataResponse(mmcli.Run(cmd))
 	return err
 }

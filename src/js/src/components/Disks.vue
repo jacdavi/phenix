@@ -1,5 +1,6 @@
 <template>
   <div class="content">
+    <!-- DETAILS MODAL -->
     <b-modal :active.sync="detailsModal.active" :on-cancel="() => detailsModal.active = false" has-modal-card>
       <div class="modal-card">
         <header class="modal-card-head">
@@ -52,20 +53,19 @@
           <div v-if="roleAllowed('disks', 'post', detailsModal.disk.name)" class="actions">
             <hr>
             <p class="title is-5">Actions</p>
-            <b-button type="is-text" expanded @click="snapshotDisk(detailsModal.disk.fullPath)" :disabled="shouldDisableAction('snapshot')">
+            <b-button type="is-text" expanded @click="snapshotDisk(detailsModal.disk.fullPath)"
+              :disabled="shouldDisableAction('snapshot')">
               <b>Snapshot</b> - Creates a new image backed by this image
             </b-button>
             <hr class="action-separator">
-            <b-button type="is-text" expanded @click="commitDisk(detailsModal.disk.fullPath)" :disabled="shouldDisableAction('commit')">
+            <b-button type="is-text" expanded @click="commitDisk(detailsModal.disk.fullPath)"
+              :disabled="shouldDisableAction('commit')">
               <b>Commit</b> - Commits change in this image to its backing image
             </b-button>
             <hr class="action-separator">
-            <b-button type="is-text" expanded :disabled="shouldDisableAction('rebase')">
+            <b-button type="is-text" expanded @click="() => rebaseModal.active = true"
+              :disabled="shouldDisableAction('rebase')">
               <b>Rebase</b> - Updates image and rebases onto a different backing image
-            </b-button>
-            <hr class="action-separator">
-            <b-button type="is-text" expanded :disabled="shouldDisableAction('set-backing')">
-              <b>Set Backing</b> - Sets the backing file without changing image
             </b-button>
             <hr class="action-separator">
             <b-button type="is-text" expanded :disabled="shouldDisableAction('clone')">
@@ -87,6 +87,28 @@
         </section>
       </div>
     </b-modal>
+    <!-- REBASE MODAL -->
+    <b-modal :active.sync="rebaseModal.active" :on-cancel="() => rebaseModal.active = false" has-modal-card>
+      <div class="modal-card">
+        <section class="modal-card-body">
+          Are you sure you want to rebase this image onto a different backing image?<br>
+          By default changes between the old and new backing images will be written to this image.
+          Selecting "None" for the backing image will cause the image to become independent.<br>
+          Selecting "Change Reference Only" will only change the backing image name without updating files.
+          <b-select placeholder="New Backing Image" v-model="rebaseModal.dst" style="padding: 8px 0px;">
+            <option value="">None</option>
+            <option v-for="d in disks" :value="d.fullPath">{{ d.name }}</option>
+          </b-select>
+          <b-checkbox v-model="rebaseModal.unsafe">Change Reference Only</b-checkbox>
+        </section>
+        <footer class="modal-card-foot" style="justify-content: flex-end;">
+          <b-button label="Close" @click="() => rebaseModal.active = false" />
+          <b-button label="OK" type="is-primary"
+            @click="() => rebaseDisk(detailsModal.disk.fullPath, rebaseModal.dst, rebaseModal.unsafe)" />
+        </footer>
+      </div>
+    </b-modal>
+    <!-- CONTENT -->
     <template>
       <hr>
       <b-field grouped position="is-right">
@@ -185,9 +207,9 @@ export default {
     },
     actionWrapper(httpPath) {
       this.$http.post(httpPath).then(
-            _ => this.updateDisks(),
-            err => this.errorNotification(err)
-          )
+        _ => this.updateDisks(),
+        err => this.errorNotification(err)
+      )
     },
     shouldDisableAction(action) {
       let disk = this.detailsModal.disk
@@ -197,7 +219,6 @@ export default {
         case "commit":
           return disk.inUse || (disk.backingImages && disk.backingImages.length == 0) || disk.kind != "VM"
         case "rebase":
-        case "set-backing":
           return disk.inUse || disk.kind != "VM"
         case "delete":
         case "rename":
@@ -218,13 +239,16 @@ export default {
     snapshotDisk(path) {
       console.log(path)
       this.$buefy.dialog.prompt({
-        message: "Are you sure you want to snapshot this disk?",
+        message: "Are you sure you want to snapshot this disk? This will create a new disk backed by this image.",
         inputAttrs: {
           type: "text",
-          "placeholder": "New image name"
+          placeholder: "New image name"
         },
         onConfirm: (value) => this.actionWrapper(`disks/snapshot?src=${path}&dst=${value}`)
       })
+    },
+    rebaseDisk(path, dst, unsafe) {
+      this.actionWrapper(`disks/rebase?src=${path}&dst=${dst}&unsafe=${unsafe}`)
     }
   },
 
@@ -245,6 +269,11 @@ export default {
         active: false,
         disk: {}
       },
+      rebaseModal: {
+        active: false,
+        unsafe: false,
+        dst: ""
+      }
     }
   }
 }
@@ -296,7 +325,7 @@ hr {
   margin: 0 8px;
 }
 
-.actions > button {
+.actions>button {
   text-align: start;
   color: dimgray;
   text-decoration: none;

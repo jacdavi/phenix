@@ -227,14 +227,14 @@ func Start(opts ...ServerOption) error {
 	}
 
 	api.HandleFunc("/disks", GetDisks).Methods("GET", "OPTIONS")
-	api.HandleFunc("/disks/snapshot", SnapshotDisk).Methods("POST", "OPTIONS").Queries("src", "{src}", "dst", "{dst}")
-	api.HandleFunc("/disks/rebase", RebaseDisk).Methods("POST", "OPTIONS").Queries("path", "{path}", "dst", "{dst}", "unsafe", "{unsafe}")
-	api.HandleFunc("/disks/commit", CommitDisk).Methods("POST", "OPTIONS").Queries("path", "{path}")
-	// api.HandleFunc("/disks/{disk}/clone", CloneDisk).Methods("POST", "OPTIONS")
-	// api.HandleFunc("/disks", UploadDisk).Methods("POST", "OPTIONS")
-	// api.HandleFunc("/disks/{disk}", DownloadDisk).Methods("GET", "OPTIONS")
-	// api.HandleFunc("/disks/{disk}", DeleteDisk).Methods("DELETE", "OPTIONS")
-	// api.HandleFunc("/disks/{disk}", RenameDisk).Methods("PUT", "OPTIONS")
+	api.HandleFunc("/disks/snapshot", SnapshotDisk).Methods("POST", "OPTIONS").Queries("disk", "{disk}", "new", "{new}")
+	api.HandleFunc("/disks/rebase", RebaseDisk).Methods("POST", "OPTIONS").Queries("disk", "{disk}", "backing", "{backing}", "unsafe", "{unsafe}")
+	api.HandleFunc("/disks/commit", CommitDisk).Methods("POST", "OPTIONS").Queries("disk", "{disk}")
+	api.HandleFunc("/disks/clone", CloneDisk).Methods("POST", "OPTIONS").Queries("disk", "{disk}", "new", "{new}")
+	api.HandleFunc("/disks", DeleteDisk).Methods("DELETE", "OPTIONS").Queries("disk", "{disk}")
+	api.HandleFunc("/disks/rename", RenameDisk).Methods("POST", "OPTIONS").Queries("disk", "{disk}", "new", "{new}")
+	api.HandleFunc("/disks", UploadDisk).Methods("POST", "OPTIONS")
+	api.HandleFunc("/disks/download", DownloadDisk).Methods("GET", "OPTIONS").Queries("disk", "{disk}")
 
 	api.HandleFunc("/vms", GetAllVMs).Methods("GET", "OPTIONS")
 	api.HandleFunc("/applications", GetApplications).Methods("GET", "OPTIONS")

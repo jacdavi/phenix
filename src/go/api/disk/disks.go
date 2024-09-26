@@ -24,10 +24,16 @@ type DiskFiles interface {
 	// Alternatively, we could force the use of subdirectories w/ known names
 	// (such as `base-images` and `container-fs`).
 	GetImages(expName string) ([]Details, error)
+	GetImage(path string) (Details, error)
 
 	CommitDisk(path string) error
 	SnapshotDisk(src, dst string) error
 	RebaseDisk(src, dst string, unsafe bool) error
+
+	CloneDisk(src, dst string) error
+	RenameDisk(src, dst string) error
+	DeleteDisk(src string) error
+
 }
 
 
@@ -54,6 +60,27 @@ func (MMDiskFiles) RebaseDisk(src, dst string, unsafe bool) error {
 	} else {
 		cmd.Command = fmt.Sprintf("disk rebase %s %s", src, dst)
 	}
+	_, err := mmcli.SingleDataResponse(mmcli.Run(cmd))
+	return err
+}
+
+func (MMDiskFiles) CloneDisk(src, dst string) error {
+	cmd := mmcli.NewCommand()
+	cmd.Command = fmt.Sprintf("shell cp %s %s", src, dst)
+	_, err := mmcli.SingleDataResponse(mmcli.Run(cmd))
+	return err
+}
+
+func (MMDiskFiles) RenameDisk(src, dst string) error {
+	cmd := mmcli.NewCommand()
+	cmd.Command = fmt.Sprintf("shell mv %s %s", src, dst)
+	_, err := mmcli.SingleDataResponse(mmcli.Run(cmd))
+	return err
+}
+
+func (MMDiskFiles) DeleteDisk(src string) error {
+	cmd := mmcli.NewCommand()
+	cmd.Command = fmt.Sprintf("shell rm %s", src)
 	_, err := mmcli.SingleDataResponse(mmcli.Run(cmd))
 	return err
 }
@@ -92,6 +119,32 @@ func (MMDiskFiles) GetImages(expName string) ([]Details, error) {
 	}
 
 	return images, nil
+}
+
+func (MMDiskFiles) GetImage(path string) (Details, error) {
+	if (!filepath.IsAbs(path)) {
+		path = filepath.Join(mmFilesDirectory, path)
+	}
+	relPath, err := filepath.Rel(mmFilesDirectory, path)
+
+	if err != nil {
+		return Details{}, err
+	}
+
+	cmd := mmcli.NewCommand()
+	cmd.Command = "file list " + relPath
+	rows := mmcli.RunTabular(cmd)
+	if len(rows) != 1 {
+		return Details{}, fmt.Errorf("could not find file specified: %s", path)
+	}
+
+
+	images := resolveImage(rows[0]["host"], path)
+	if len(images) == 0 {
+		return Details{}, fmt.Errorf("could not resolve file specified: %s", path)
+	}
+
+	return images[0], nil
 }
 
 // Get all image files from the minimega files directory
@@ -154,6 +207,7 @@ func getTopologyFiles(expName string, details map[string]Details) error {
 }
 
 func resolveImage(host, path string) []Details {
+	plog.Info("resolve", "path", path)
 	imageDetails := []Details{}
 
 	knownFormat := false

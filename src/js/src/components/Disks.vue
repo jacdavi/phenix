@@ -50,7 +50,7 @@
             </div>
           </div>
 
-          <div v-if="roleAllowed('disks', 'post', detailsModal.disk.name)" class="actions">
+          <div class="actions">
             <hr>
             <p class="title is-5">Actions</p>
             <b-button type="is-text" expanded @click="snapshotDisk(detailsModal.disk.fullPath)"
@@ -68,20 +68,20 @@
               <b>Rebase</b> - Updates image and rebases onto a different backing image
             </b-button>
             <hr class="action-separator">
-            <b-button type="is-text" expanded :disabled="shouldDisableAction('clone')">
-              <b>Clone</b>
+            <b-button type="is-text" expanded @click="cloneDisk(detailsModal.disk.fullPath)" :disabled="shouldDisableAction('clone')">
+              <b>Clone</b> - Creates a copy of the disk file
             </b-button>
             <hr class="action-separator">
-            <b-button type="is-text" expanded :disabled="shouldDisableAction('download')">
-              <b>Download</b>
-            </b-button>
-            <hr class="action-separator">
-            <b-button type="is-text" expanded :disabled="shouldDisableAction('rename')">
+            <b-button type="is-text" expanded @click="renameDisk(detailsModal.disk.fullPath)" :disabled="shouldDisableAction('rename')">
               <b>Rename</b>
             </b-button>
             <hr class="action-separator">
-            <b-button type="is-text" expanded :disabled="shouldDisableAction('delete')">
+            <b-button type="is-text" expanded @click="deleteDisk(detailsModal.disk.fullPath)" :disabled="shouldDisableAction('delete')">
               <b>Delete</b>
+            </b-button>
+            <hr class="action-separator">
+            <b-button type="is-text" expanded @click="downloadDisk(detailsModal.disk.fullPath)" :disabled="shouldDisableAction('download')">
+              <b>Download</b>
             </b-button>
           </div>
         </section>
@@ -117,10 +117,13 @@
             <b-icon icon="refresh"></b-icon>
           </button>
         </b-tooltip>
-        <b-tooltip v-if="roleAllowed('disks', 'post')" label="Upload a disk" type="is-light is-left">
-          <button class="button is-light" style="margin-left: 8px;">
-            <b-icon icon="upload"></b-icon>
-          </button>
+        <b-tooltip v-if="roleAllowed('disks', 'upload')" label="Upload a disk" type="is-light is-left">
+          <b-upload class="file-label" style="margin-left: 8px;" @input="uploadDisk" :disabled="currentUploadProgress != null">
+            <span class="file-cta">
+              <b-icon v-if="currentUploadProgress == null" icon="upload"></b-icon>
+              <p v-else style="width: 32px;"> {{  currentUploadProgress }}% </p>
+            </span>
+          </b-upload>
         </b-tooltip>
       </b-field>
       <div>
@@ -215,16 +218,19 @@ export default {
       let disk = this.detailsModal.disk
       switch (action) {
         case "snapshot":
-          return disk.inUse || disk.kind != "VM"
+          return disk.inUse || disk.kind != "VM" || !this.roleAllowed('disks', 'create')
         case "commit":
           return disk.inUse || (disk.backingImages && disk.backingImages.length == 0) || disk.kind != "VM"
         case "rebase":
-          return disk.inUse || disk.kind != "VM"
+          return disk.inUse || disk.kind != "VM" || !this.roleAllowed('disks', 'update', disk.name)
         case "delete":
+          return disk.inUse || !this.roleAllowed('disks', 'delete', disk.name)
         case "rename":
-          return disk.inUse
+          return disk.inUse || !this.roleAllowed('disks', 'update', disk.name)
         case "clone":
+          return !this.roleAllowed('disks', 'create')
         case "download":
+          return !this.roleAllowed('disks', 'get', disk.name)
         default:
           return false
       }
@@ -233,7 +239,7 @@ export default {
       console.log(path)
       this.$buefy.dialog.confirm({
         message: "Are you sure you want to commit this disk? The disk will remain unchanged, but its backing image will contain all data from this disk.",
-        onConfirm: () => this.actionWrapper(`disks/commit?path=${path}`)
+        onConfirm: () => this.actionWrapper(`disks/commit?disk=${path}`)
       })
     },
     snapshotDisk(path) {
@@ -244,11 +250,65 @@ export default {
           type: "text",
           placeholder: "New image name"
         },
-        onConfirm: (value) => this.actionWrapper(`disks/snapshot?src=${path}&dst=${value}`)
+        onConfirm: (value) => this.actionWrapper(`disks/snapshot?disk=${path}&new=${value}`)
       })
     },
     rebaseDisk(path, dst, unsafe) {
-      this.actionWrapper(`disks/rebase?src=${path}&dst=${dst}&unsafe=${unsafe}`)
+      this.actionWrapper(`disks/rebase?disk=${path}&backing=${dst}&unsafe=${unsafe}`)
+    },
+    cloneDisk(path) {
+      console.log(path)
+      this.$buefy.dialog.confirm({
+        message: "Are you sure you want to clone this disk?.",
+        inputAttrs: {
+          type: "text",
+          placeholder: "New image name"
+        },
+        onConfirm: (value) => this.actionWrapper(`disks/clone?disk=${path}&new=${value}`)
+      })
+    },
+    renameDisk(path) {
+      console.log(path)
+      this.$buefy.dialog.confirm({
+        message: 'Are you sure you want to rename this disk?.<b class="has-text-danger">If this disk backs others, they must be rebased to use the new name</b>',
+        inputAttrs: {
+          type: "text",
+          placeholder: "New name"
+        },
+        onConfirm: (value) => this.actionWrapper(`disks/rename?disk=${path}&new=${value}`)
+      })
+    },
+    deleteDisk(path) {
+      console.log(path)
+      // TODO: delete not post
+      this.$buefy.dialog.confirm({
+        message: 'Are you sure you want to delete this disk?.<b class="has-text-danger">If this disk backs others, they will become invalid</b>',
+        onConfirm: () => this.actionWrapper(`disks/delete?disk=${path}`)
+      })
+    },
+    downloadDisk(path) {
+      this.$buefy.dialog.confirm({
+        message: 'Are you sure you want to download this disk?',
+        onConfirm: () => window.open(`${process.env.BASE_URL}api/v1/disks/download?token=${this.$store.state.token}&path=${encodeURIComponent(path)}`, '_blank')
+      })
+    },
+    uploadDisk(file) {
+      let formData = new FormData();
+      formData.append('file', file);
+      this.currentUploadProgress = 0;
+      console.log(file.name)
+      this.$http.post(`disks`, formData, { 
+          headers: {'Content-Type': 'multipart/form-data' },
+          uploadProgress: (event) => {
+            this.currentUploadProgress = Math.round(event.loaded / event.total * 100);
+          }
+        }).then(_ => {
+          this.currentUploadProgress = null;
+          this.updateDisks()
+        }, err => {
+          this.errorNotification(`Error uploading: ${err.body}`)
+          this.currentUploadProgress = null;
+        });
     }
   },
 
@@ -263,6 +323,7 @@ export default {
         currentPage: 1,
         perPage: 10
       },
+      currentUploadProgress: null,
       disks: [],
       isWaiting: false,
       detailsModal: {
@@ -330,5 +391,11 @@ hr {
   color: dimgray;
   text-decoration: none;
   display: inline;
+}
+
+.file-cta, .file-cta>p, .file-cta:hover {
+  border: none;
+  background-color: #686868;
+  color: whitesmoke !important;
 }
 </style>

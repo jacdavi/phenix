@@ -1067,7 +1067,7 @@ export default {
     },
 
     saveStyle() {
-      let update = { "tagUpdateMode": "ADD", "tags": {[SOH_STYLE_LABEL_KEY]: this.styleModalCustomStyle } };
+      let update = { "tag_update_mode": "ADD", "tags": {[SOH_STYLE_LABEL_KEY]: this.styleModalCustomStyle } };
 
       this.$http.patch('experiments/' + this.$route.params.id + '/vms/' + this.styleModal.vm, update)
           .then(_ => {

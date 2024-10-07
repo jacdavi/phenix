@@ -45,7 +45,7 @@
               <b>{{ detailsModal.disk.name }}</b>
               <div v-for="i in detailsModal.disk.backingImages">
                 &darr;<br>
-                {{ i }}
+                <a @click="detailsModal.disk = disks.find(d => d.name==i)" >{{  i  }}</a>
               </div>
             </div>
           </div>
@@ -372,7 +372,7 @@ export default {
   white-space: pre !important;
 }
 
-.modal-card-body {
+.modal-card-body, .modal-card-body a {
   color: black !important;
 }
 

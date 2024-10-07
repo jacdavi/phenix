@@ -68,19 +68,23 @@
               <b>Rebase</b> - Updates image and rebases onto a different backing image
             </b-button>
             <hr class="action-separator">
-            <b-button type="is-text" expanded @click="cloneDisk(detailsModal.disk.fullPath)" :disabled="shouldDisableAction('clone')">
+            <b-button type="is-text" expanded @click="cloneDisk(detailsModal.disk.fullPath)"
+              :disabled="shouldDisableAction('clone')">
               <b>Clone</b> - Creates a copy of the disk file
             </b-button>
             <hr class="action-separator">
-            <b-button type="is-text" expanded @click="renameDisk(detailsModal.disk.fullPath)" :disabled="shouldDisableAction('rename')">
+            <b-button type="is-text" expanded @click="renameDisk(detailsModal.disk.fullPath)"
+              :disabled="shouldDisableAction('rename')">
               <b>Rename</b>
             </b-button>
             <hr class="action-separator">
-            <b-button type="is-text" expanded @click="deleteDisk(detailsModal.disk.fullPath)" :disabled="shouldDisableAction('delete')">
+            <b-button type="is-text" expanded @click="deleteDisk(detailsModal.disk.fullPath)"
+              :disabled="shouldDisableAction('delete')">
               <b>Delete</b>
             </b-button>
             <hr class="action-separator">
-            <b-button type="is-text" expanded @click="downloadDisk(detailsModal.disk.fullPath)" :disabled="shouldDisableAction('download')">
+            <b-button type="is-text" expanded @click="downloadDisk(detailsModal.disk.fullPath)"
+              :disabled="shouldDisableAction('download')">
               <b>Download</b>
             </b-button>
           </div>
@@ -112,25 +116,44 @@
     <template>
       <hr>
       <b-field grouped position="is-right">
+        <b-field>
+          <b-autocomplete v-model="filterString" placeholder="Find a disk" icon="search"
+          @select="option => selected = option" :data="filteredDisks.map(d => d.name)" style="width: 512px;">
+          </b-autocomplete>
+          <p class='control'>
+            <button class='button' style="color:#686868" @click="filterString = ''">
+              <b-icon icon="window-close"></b-icon>
+            </button>
+          </p>
+        </b-field>
+
         <b-tooltip label="Refresh List" type="is-light is-left">
           <button class="button is-light" @click="updateDisks">
             <b-icon icon="refresh"></b-icon>
           </button>
         </b-tooltip>
         <b-tooltip v-if="roleAllowed('disks', 'upload')" label="Upload a disk" type="is-light is-left">
-          <b-upload class="file-label" style="margin-left: 8px;" @input="uploadDisk" :disabled="currentUploadProgress != null">
+          <b-upload class="file-label" style="margin-left: 8px;" @input="uploadDisk"
+            :disabled="currentUploadProgress != null">
             <span class="file-cta">
               <b-icon v-if="currentUploadProgress == null" icon="upload"></b-icon>
-              <p v-else style="width: 32px;"> {{  currentUploadProgress }}% </p>
+              <p v-else style="width: 32px;"> {{ currentUploadProgress }}% </p>
             </span>
           </b-upload>
         </b-tooltip>
       </b-field>
       <div>
-        <b-table hoverable @click="rowClick" :row-class="(r, i) => 'is-clickable'" :data="disks"
+        <b-table hoverable @click="rowClick" :row-class="(r, i) => 'is-clickable'" :data="filteredDisks"
           :paginated="table.isPaginated" :per-page="table.perPage" :current-page.sync="table.currentPage"
           :pagination-simple="table.isPaginationSimple" :pagination-size="table.paginationSize"
           :default-sort-direction="table.defaultSortDirection" :loading="isWaiting" default-sort="name">
+          <template slot="empty">
+            <section class="section">
+              <div class="content has-text-white has-text-centered">
+                No Disks Found
+              </div>
+            </section>
+          </template>
           <b-table-column field="name" label="Name" v-slot="props">
             {{ props.row.name }}
           </b-table-column>
@@ -172,6 +195,9 @@ export default {
     paginationNeeded() {
       return this.disks.length > this.table.perPage
     },
+    filteredDisks() {
+      return this.disks == null ? [] : this.disks.filter((disk) => disk.name.toLowerCase().indexOf(this.filterString.toLowerCase()) >= 0)
+    }
   },
 
   methods: {
@@ -297,18 +323,18 @@ export default {
       formData.append('file', file);
       this.currentUploadProgress = 0;
       console.log(file.name)
-      this.$http.post(`disks`, formData, { 
-          headers: {'Content-Type': 'multipart/form-data' },
-          uploadProgress: (event) => {
-            this.currentUploadProgress = Math.round(event.loaded / event.total * 100);
-          }
-        }).then(_ => {
-          this.currentUploadProgress = null;
-          this.updateDisks()
-        }, err => {
-          this.errorNotification(`Error uploading: ${err.body}`)
-          this.currentUploadProgress = null;
-        });
+      this.$http.post(`disks`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        uploadProgress: (event) => {
+          this.currentUploadProgress = Math.round(event.loaded / event.total * 100);
+        }
+      }).then(_ => {
+        this.currentUploadProgress = null;
+        this.updateDisks()
+      }, err => {
+        this.errorNotification(`Error uploading: ${err.body}`)
+        this.currentUploadProgress = null;
+      });
     }
   },
 
@@ -325,6 +351,7 @@ export default {
       },
       currentUploadProgress: null,
       disks: [],
+      filterString: "",
       isWaiting: false,
       detailsModal: {
         active: false,
@@ -393,9 +420,15 @@ hr {
   display: inline;
 }
 
-.file-cta, .file-cta>p, .file-cta:hover {
+.file-cta,
+.file-cta>p,
+.file-cta:hover {
   border: none;
   background-color: #686868;
   color: whitesmoke !important;
+}
+
+div.autocomplete>>>a.dropdown-item {
+  color: #383838 !important;
 }
 </style>

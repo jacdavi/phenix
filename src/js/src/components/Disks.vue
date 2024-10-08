@@ -58,7 +58,7 @@
               <b>Snapshot</b> - Creates a new image backed by this image
             </b-button>
             <hr class="action-separator">
-            <b-button type="is-text" expanded @click="commitDisk(detailsModal.disk.fullPath)"
+            <b-button type="is-text" expanded @click="() => commitModal.active = true"
               :disabled="shouldDisableAction('commit')">
               <b>Commit</b> - Commits change in this image to its backing image
             </b-button>
@@ -93,22 +93,39 @@
     </b-modal>
     <!-- REBASE MODAL -->
     <b-modal :active.sync="rebaseModal.active" :on-cancel="() => rebaseModal.active = false" has-modal-card>
-      <div class="modal-card">
+      <div class="modal-card" style="max-width: 460px;">
         <section class="modal-card-body">
           Are you sure you want to rebase this image onto a different backing image?<br>
           By default changes between the old and new backing images will be written to this image.
           Selecting "None" for the backing image will cause the image to become independent.<br>
           Selecting "Change Reference Only" will only change the backing image name without updating files.
-          <b-select placeholder="New Backing Image" v-model="rebaseModal.dst" style="padding: 8px 0px;">
+          <b-select placeholder="New Backing Image" v-model="rebaseModal.dst" style="margin-bottom: 8px; margin-top: 16px;">
             <option value="">None</option>
             <option v-for="d in disks" :value="d.fullPath">{{ d.name }}</option>
           </b-select>
-          <b-checkbox v-model="rebaseModal.unsafe">Change Reference Only</b-checkbox>
+          <b-checkbox v-model="rebaseModal.unsafe">Change reference only</b-checkbox>
         </section>
         <footer class="modal-card-foot" style="justify-content: flex-end;">
           <b-button label="Close" @click="() => rebaseModal.active = false" />
           <b-button label="OK" type="is-primary"
             @click="() => rebaseDisk(detailsModal.disk.fullPath, rebaseModal.dst, rebaseModal.unsafe)" />
+        </footer>
+      </div>
+    </b-modal>
+    <!-- COMMIT MODAL -->
+    <b-modal :active.sync="commitModal.active" :on-cancel="() => commitModal.active = false" has-modal-card>
+      <div class="modal-card" style="max-width: 460px;">
+        <section class="modal-card-body">
+          Are you sure you want to commit the changes in this disk to its parent?<br>
+          By default this disk is left unchanged, but you may select to delete if it's no longer needed.
+          <b-field style="margin-top: 16px;">
+            <b-checkbox v-model="commitModal.delete">Delete this disk after commit</b-checkbox>
+          </b-field>
+        </section>
+        <footer class="modal-card-foot" style="justify-content: flex-end;">
+          <b-button label="Close" @click="() => commitModal.active = false" />
+          <b-button label="OK" type="is-primary"
+            @click="() => commitDisk(detailsModal.disk.fullPath, commitModal.delete)" />
         </footer>
       </div>
     </b-modal>
@@ -203,6 +220,15 @@ export default {
   methods: {
     updateDisks() {
       this.detailsModal.active = false
+      this.rebaseModal = {
+        active: false,
+        unsafe: false,
+        dst: ""
+      }
+      this.commitModal = {
+        active: false,
+        delete: false
+      }
       this.isWaiting = true
       this.$http.get('disks').then(
         response => {
@@ -234,12 +260,7 @@ export default {
       var user = localStorage.getItem('user');
       localStorage.setItem(user + '.lastPaginate', this.table.isPaginated);
     },
-    actionWrapper(httpPath) {
-      this.$http.post(httpPath).then(
-        _ => this.updateDisks(),
-        err => this.errorNotification(err)
-      )
-    },
+
     shouldDisableAction(action) {
       let disk = this.detailsModal.disk
       switch (action) {
@@ -261,12 +282,25 @@ export default {
           return false
       }
     },
-    commitDisk(path) {
+    actionWrapper(httpPath, method='post') {
+      this.$http[method](httpPath).then(
+        _ => this.updateDisks(),
+        err => this.errorNotification(err)
+      )
+    },
+    commitDisk(path, deleteOnSuccess) {
       console.log(path)
-      this.$buefy.dialog.confirm({
-        message: "Are you sure you want to commit this disk? The disk will remain unchanged, but its backing image will contain all data from this disk.",
-        onConfirm: () => this.actionWrapper(`disks/commit?disk=${path}`)
-      })
+      this.$http.post(`disks/commit?disk=${path}`).then(
+        _ => {
+          if (deleteOnSuccess) {
+            this.actionWrapper(`disks?disk=${path}`, 'delete')
+          }
+          else {
+            this.updateDisks()
+          }
+        },
+        err => errorNotification(err)
+      )
     },
     snapshotDisk(path) {
       console.log(path)
@@ -296,7 +330,7 @@ export default {
     renameDisk(path) {
       console.log(path)
       this.$buefy.dialog.confirm({
-        message: 'Are you sure you want to rename this disk?.<b class="has-text-danger">If this disk backs others, they must be rebased to use the new name</b>',
+        message: 'Are you sure you want to rename this disk? <b class="has-text-danger">If this disk backs others, they must be rebased to use the new name</b>',
         inputAttrs: {
           type: "text",
           placeholder: "New name"
@@ -306,16 +340,15 @@ export default {
     },
     deleteDisk(path) {
       console.log(path)
-      // TODO: delete not post
       this.$buefy.dialog.confirm({
-        message: 'Are you sure you want to delete this disk?.<b class="has-text-danger">If this disk backs others, they will become invalid</b>',
-        onConfirm: () => this.actionWrapper(`disks/delete?disk=${path}`)
+        message: 'Are you sure you want to delete this disk? <b class="has-text-danger">If this disk backs others, they will become invalid</b>',
+        onConfirm: () => this.actionWrapper(`disks?disk=${path}`, 'delete')
       })
     },
     downloadDisk(path) {
       this.$buefy.dialog.confirm({
         message: 'Are you sure you want to download this disk?',
-        onConfirm: () => window.open(`${process.env.BASE_URL}api/v1/disks/download?token=${this.$store.state.token}&path=${encodeURIComponent(path)}`, '_blank')
+        onConfirm: () => window.open(`${process.env.BASE_URL}api/v1/disks/download?token=${this.$store.state.token}&disk=${encodeURIComponent(path)}`, '_blank')
       })
     },
     uploadDisk(file) {
@@ -361,6 +394,10 @@ export default {
         active: false,
         unsafe: false,
         dst: ""
+      },
+      commitModal: {
+        active: false,
+        delete: false,
       }
     }
   }

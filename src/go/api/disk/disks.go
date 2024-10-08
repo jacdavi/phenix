@@ -207,7 +207,6 @@ func getTopologyFiles(expName string, details map[string]Details) error {
 }
 
 func resolveImage(host, path string) []Details {
-	plog.Info("resolve", "path", path)
 	imageDetails := []Details{}
 
 	knownFormat := false

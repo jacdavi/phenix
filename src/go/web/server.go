@@ -129,7 +129,7 @@ func Start(opts ...ServerOption) error {
 	)
 
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		plog.Warn("Unknown route requested", "route", r.RequestURI)
+		plog.Warn("Unknown route requested", "route", r.RequestURI, "method", r.Method)
 		switch a := assets.(type) {
 		case *assetfs.AssetFS:
 			util.NewBinaryFileSystem(a).ServeFile(w, r, "index.html")

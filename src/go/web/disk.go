@@ -273,7 +273,7 @@ func DownloadDisk(w http.ResponseWriter, r *http.Request) {
 
 	if !filepath.IsAbs(path) {
 		path = filepath.Join(fileDir, path)
-	} else if !strings.HasPrefix(fileDir, path) {
+	} else if !strings.HasPrefix(path, fileDir) {
 		errString := fmt.Sprintf("Error getting path %s: Path is not within files directory", path)
 		plog.Error(errString)
 		http.Error(w, errString, http.StatusBadRequest)

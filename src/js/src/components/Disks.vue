@@ -158,7 +158,7 @@
       <div>
         <b-table hoverable @click="rowClick" :row-class="(r, i) => 'is-clickable'" :data="filteredDisks"
           :paginated="table.isPaginated" :per-page="table.perPage" :current-page.sync="table.currentPage"
-          :pagination-simple="table.isPaginationSimple" :pagination-size="table.paginationSize"
+          :pagination-simple="table.isPaginationSimple" :pagination-size="table.paginationSize" sortable
           :default-sort-direction="table.defaultSortDirection" :loading="isWaiting" default-sort="name">
           <template slot="empty">
             <section class="section">
@@ -167,17 +167,17 @@
               </div>
             </section>
           </template>
-          <b-table-column field="name" label="Name" v-slot="props">
+          <b-table-column field="name" label="Name" sortable v-slot="props">
             {{ props.row.name }}
           </b-table-column>
-          <b-table-column field="kind" label="Kind" v-slot="props">
+          <b-table-column field="kind" label="Kind" sortable v-slot="props">
             {{ props.row.kind }}
           </b-table-column>
-          <b-table-column field="inUse" label="In Use" centered v-slot="props">
+          <b-table-column field="inUse" label="In Use" centered sortable v-slot="props">
             <b-icon v-if="props.row.inUse" icon="play-circle" size="is-small" />
           </b-table-column>
-          <b-table-column field="size" label="Size" v-slot="props">
-            {{ props.row.size | fileSize }}
+          <b-table-column field="size" label="Size" sortable :custom-sort="sortBySize" v-slot="props">
+            {{ props.row.size }}
           </b-table-column>
         </b-table>
         <br>
@@ -364,6 +364,19 @@ export default {
         this.errorNotification(`Error uploading: ${err.body}`)
         this.currentUploadProgress = null;
       });
+    },
+    // converts a human-readable string in IEC format to a byte count
+    toByteCount(s) {
+        const units = "KMGTPE"
+        const base = s.match(/[/.0-9]*/)
+        const unit = s[s.indexOf(" ") + 1]
+        if (unit == "B") {
+          return parseFloat(base)
+        }
+        return parseFloat(base) * Math.pow(1024, units.indexOf(unit))
+    },
+    sortBySize(diskA, diskB, isAsc) {
+      return (this.toByteCount(diskA.size) - this.toByteCount(diskB.size)) * (isAsc ? 1 : -1)
     }
   },
 

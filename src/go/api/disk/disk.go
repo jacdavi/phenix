@@ -102,20 +102,8 @@ func (MMDiskFiles) GetImage(path string) (Details, error) {
 	if !filepath.IsAbs(path) {
 		path = filepath.Join(mmFilesDirectory, path)
 	}
-	relPath, err := filepath.Rel(mmFilesDirectory, path)
 
-	if err != nil {
-		return Details{}, err
-	}
-
-	cmd := mmcli.NewCommand()
-	cmd.Command = "file list " + relPath
-	rows := mmcli.RunTabular(cmd)
-	if len(rows) != 1 {
-		return Details{}, fmt.Errorf("could not find file specified: %s", path)
-	}
-
-	images := resolveImage(rows[0]["host"])
+	images := resolveImage(path)
 	if len(images) == 0 {
 		return Details{}, fmt.Errorf("could not resolve file specified: %s", path)
 	}
@@ -132,7 +120,7 @@ func getAllFiles(details map[string]Details) error {
 
 	for _, row := range mmcli.RunTabular(cmd) {
 		if _, ok := details[row["name"]]; row["dir"] == "" && !ok {
-			for _, image := range resolveImage(row["host"]) {
+			for _, image := range resolveImage(filepath.Join(mmFilesDirectory, row["name"])) {
 				if _, ok := details[image.Name]; !ok {
 					details[image.Name] = image
 				}

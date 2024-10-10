@@ -1,5 +1,7 @@
 package disk
 
+// defines disk API functions
+// all path, src, dst arguments should be either absolute paths or relative paths from the mm files directory
 type DiskFiles interface {
 	// Get list of VM disk images, container filesystems, or both.
 	// Assumes disk images have `.qc2` or `.qcow2` extension.

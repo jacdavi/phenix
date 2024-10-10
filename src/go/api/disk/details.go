@@ -48,7 +48,6 @@ func StringToKind(kind string) Kind {
 }
 
 type Details struct {
-	Host          string   `json:"host"`
 	Kind          Kind     `json:"kind"`
 	Name          string   `json:"name"`
 	FullPath      string   `json:"fullPath"`

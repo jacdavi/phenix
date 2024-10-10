@@ -10,10 +10,6 @@
           <p class="title is-5">Details</p>
           <dl>
             <div>
-              <dt>Host:</dt>
-              <dd>{{ detailsModal.disk.host }}</dd>
-            </div>
-            <div>
               <dt>Full Path:</dt>
               <dd>{{ detailsModal.disk.fullPath }}</dd>
             </div>

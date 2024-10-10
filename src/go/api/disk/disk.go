@@ -8,7 +8,6 @@ import (
 
 	"phenix/api/experiment"
 	"phenix/util"
-	"phenix/util/mm"
 	"phenix/util/mm/mmcli"
 	"phenix/util/plog"
 )
@@ -16,26 +15,6 @@ import (
 var (
 	mmFilesDirectory = util.GetMMFilesDirectory()
 )
-
-type DiskFiles interface {
-	// Get list of VM disk images, container filesystems, or both.
-	// Assumes disk images have `.qc2` or `.qcow2` extension.
-	// Assumes container filesystems have `_rootfs.tgz` suffix.
-	// Alternatively, we could force the use of subdirectories w/ known names
-	// (such as `base-images` and `container-fs`).
-	GetImages(expName string) ([]Details, error)
-	GetImage(path string) (Details, error)
-
-	CommitDisk(path string) error
-	SnapshotDisk(src, dst string) error
-	RebaseDisk(src, dst string, unsafe bool) error
-
-	CloneDisk(src, dst string) error
-	RenameDisk(src, dst string) error
-	DeleteDisk(src string) error
-
-}
-
 
 type MMDiskFiles struct{}
 
@@ -85,8 +64,6 @@ func (MMDiskFiles) DeleteDisk(src string) error {
 	return err
 }
 
-// Gets images in base directory, plus any images that expName references
-// if expName is empty, will check all known experiments
 func (MMDiskFiles) GetImages(expName string) ([]Details, error) {
 	// Using a map here to weed out duplicates.
 	details := make(map[string]Details)
@@ -122,7 +99,7 @@ func (MMDiskFiles) GetImages(expName string) ([]Details, error) {
 }
 
 func (MMDiskFiles) GetImage(path string) (Details, error) {
-	if (!filepath.IsAbs(path)) {
+	if !filepath.IsAbs(path) {
 		path = filepath.Join(mmFilesDirectory, path)
 	}
 	relPath, err := filepath.Rel(mmFilesDirectory, path)
@@ -138,8 +115,7 @@ func (MMDiskFiles) GetImage(path string) (Details, error) {
 		return Details{}, fmt.Errorf("could not find file specified: %s", path)
 	}
 
-
-	images := resolveImage(rows[0]["host"], path)
+	images := resolveImage(rows[0]["host"])
 	if len(images) == 0 {
 		return Details{}, fmt.Errorf("could not resolve file specified: %s", path)
 	}
@@ -150,28 +126,21 @@ func (MMDiskFiles) GetImage(path string) (Details, error) {
 // Get all image files from the minimega files directory
 func getAllFiles(details map[string]Details) error {
 
-	// First get file listings from mesh, then from headnode.
-	commands := []string{"mesh send all file list", "file list"}
-
 	// First, get file listings from cluster nodes.
 	cmd := mmcli.NewCommand()
+	cmd.Command = "file list"
 
-	for _, command := range commands {
-		cmd.Command = command
-
-		for _, row := range mmcli.RunTabular(cmd) {
-			if _, ok := details[row["name"]]; row["dir"] == "" && !ok {
-				for _, image := range resolveImage(row["host"], filepath.Join(mmFilesDirectory, row["name"])) {
-					if _, ok := details[image.Name]; !ok {
-						details[image.Name] = image
-					}
+	for _, row := range mmcli.RunTabular(cmd) {
+		if _, ok := details[row["name"]]; row["dir"] == "" && !ok {
+			for _, image := range resolveImage(row["host"]) {
+				if _, ok := details[image.Name]; !ok {
+					details[image.Name] = image
 				}
 			}
 		}
 	}
 
 	return nil
-
 }
 
 // Retrieves all the unique image names defined in the topology
@@ -182,7 +151,6 @@ func getTopologyFiles(expName string, details map[string]Details) error {
 		return fmt.Errorf("unable to retrieve %v", expName)
 	}
 
-	headnode := mm.Headnode()
 	for _, node := range exp.Spec.Topology().Nodes() {
 		for _, drive := range node.Hardware().Drives() {
 			if len(drive.Image()) == 0 {
@@ -192,9 +160,9 @@ func getTopologyFiles(expName string, details map[string]Details) error {
 			if !filepath.IsAbs(path) {
 				path = filepath.Join(mmFilesDirectory, path)
 			}
-			
+
 			if _, ok := details[filepath.Base(path)]; !ok {
-				for _, image := range resolveImage(headnode, path) {
+				for _, image := range resolveImage(path) {
 					if _, ok := details[image.Name]; !ok {
 						details[image.Name] = image
 					}
@@ -206,7 +174,7 @@ func getTopologyFiles(expName string, details map[string]Details) error {
 	return nil
 }
 
-func resolveImage(host, path string) []Details {
+func resolveImage(path string) []Details {
 	imageDetails := []Details{}
 
 	knownFormat := false
@@ -227,11 +195,10 @@ func resolveImage(host, path string) []Details {
 
 	for i, row := range images {
 		image := Details{
-			Host:		 host,
-			Name:        filepath.Base(row["image"]),
-			FullPath:    row["image"],
-			Size:        row["disksize"],
-			VirtualSize: row["virtualsize"],
+			Name:          filepath.Base(row["image"]),
+			FullPath:      row["image"],
+			Size:          row["disksize"],
+			VirtualSize:   row["virtualsize"],
 			BackingImages: []string{},
 		}
 

@@ -103,7 +103,7 @@
         </section>
         <footer class="modal-card-foot" style="justify-content: flex-end;">
           <b-button label="Close" @click="() => rebaseModal.active = false" />
-          <b-button label="OK" type="is-primary"
+          <b-button label="OK" type="is-primary" :loading="rebaseModal.isWaiting"
             @click="() => rebaseDisk(detailsModal.disk.fullPath, rebaseModal.dst, rebaseModal.unsafe)" />
         </footer>
       </div>
@@ -120,7 +120,7 @@
         </section>
         <footer class="modal-card-foot" style="justify-content: flex-end;">
           <b-button label="Close" @click="() => commitModal.active = false" />
-          <b-button label="OK" type="is-primary"
+          <b-button label="OK" type="is-primary" :loading="commitModal.isWaiting"
             @click="() => commitDisk(detailsModal.disk.fullPath, commitModal.delete)" />
         </footer>
       </div>
@@ -214,30 +214,32 @@ export default {
   },
 
   methods: {
-    updateDisks() {
+    resetData() {
+      this.disks = []
       this.detailsModal.active = false
       this.rebaseModal = {
         active: false,
         unsafe: false,
+        isWaiting: false,
         dst: ""
       }
       this.commitModal = {
         active: false,
-        delete: false
+        delete: false,
+        isWaiting: false,
       }
+    },
+    updateDisks() {
+      this.resetData()
       this.isWaiting = true
       this.$http.get('disks').then(
         response => {
           response.json().then(
             state => {
               console.log(state)
-              this.disks = []
-
               for (let i = 0; i < state.disks.length; i++) {
                 this.disks.push(state.disks[i]);
               }
-
-              this.disks.sort()
               this.isWaiting = false;
             }
 
@@ -278,18 +280,32 @@ export default {
           return false
       }
     },
-    actionWrapper(httpPath, method='post') {
+    actionWrapper(httpPath, dialog=null, method='post') {
+      console.log(dialog)
+      if (dialog != null) {
+        dialog.startLoading()
+      }
       this.$http[method](httpPath).then(
-        _ => this.updateDisks(),
-        err => this.errorNotification(err)
+        _ => {
+          this.updateDisks()
+          if (dialog != null) {
+            dialog.close()
+          }
+        },
+        err => {
+          this.errorNotification(err)
+          if (dialog != null) {
+            dialog.cancelLoading()
+          }
+        }
       )
     },
     commitDisk(path, deleteOnSuccess) {
-      console.log(path)
+      this.commitModal.isWaiting = true
       this.$http.post(`disks/commit?disk=${path}`).then(
         _ => {
           if (deleteOnSuccess) {
-            this.actionWrapper(`disks?disk=${path}`, 'delete')
+            this.actionWrapper(`disks?disk=${path}`, null, 'delete')
           }
           else {
             this.updateDisks()
@@ -299,46 +315,48 @@ export default {
       )
     },
     snapshotDisk(path) {
-      console.log(path)
       this.$buefy.dialog.prompt({
         message: "Are you sure you want to snapshot this disk? This will create a new disk backed by this image.",
         inputAttrs: {
           type: "text",
           placeholder: "New image name"
         },
-        onConfirm: (value) => this.actionWrapper(`disks/snapshot?disk=${path}&new=${value}`)
+        closeOnConfirm: false,
+        onConfirm: (value, dialog) => this.actionWrapper(`disks/snapshot?disk=${path}&new=${value}`, dialog)
       })
     },
     rebaseDisk(path, dst, unsafe) {
+      this.rebaseModal.isWaiting = true
       this.actionWrapper(`disks/rebase?disk=${path}&backing=${dst}&unsafe=${unsafe}`)
     },
     cloneDisk(path) {
-      console.log(path)
-      this.$buefy.dialog.confirm({
-        message: "Are you sure you want to clone this disk?.",
+      this.$buefy.dialog.prompt({
+        message: "Are you sure you want to clone this disk?",
         inputAttrs: {
           type: "text",
           placeholder: "New image name"
         },
-        onConfirm: (value) => this.actionWrapper(`disks/clone?disk=${path}&new=${value}`)
+        closeOnConfirm: false,
+        onConfirm: (value, dialog) => this.actionWrapper(`disks/clone?disk=${path}&new=${value}`, dialog)
       })
     },
     renameDisk(path) {
-      console.log(path)
-      this.$buefy.dialog.confirm({
+      this.$buefy.dialog.prompt({
         message: 'Are you sure you want to rename this disk? <b class="has-text-danger">If this disk backs others, they must be rebased to use the new name</b>',
         inputAttrs: {
           type: "text",
           placeholder: "New name"
         },
-        onConfirm: (value) => this.actionWrapper(`disks/rename?disk=${path}&new=${value}`)
+        closeOnConfirm: false,
+        onConfirm: (value, dialog) => this.actionWrapper(`disks/rename?disk=${path}&new=${value}`, dialog)
       })
     },
     deleteDisk(path) {
       console.log(path)
       this.$buefy.dialog.confirm({
         message: 'Are you sure you want to delete this disk? <b class="has-text-danger">If this disk backs others, they will become invalid</b>',
-        onConfirm: () => this.actionWrapper(`disks?disk=${path}`, 'delete')
+        closeOnConfirm: false,
+        onConfirm: (_, dialog) => this.actionWrapper(`disks?disk=${path}`, dialog, 'delete')
       })
     },
     downloadDisk(path) {
@@ -401,11 +419,13 @@ export default {
       },
       rebaseModal: {
         active: false,
+        isWaiting: false,
         unsafe: false,
         dst: ""
       },
       commitModal: {
         active: false,
+        isWaiting: false,
         delete: false,
       }
     }

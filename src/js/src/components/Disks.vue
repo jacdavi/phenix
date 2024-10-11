@@ -88,7 +88,7 @@
       </div>
     </b-modal>
     <!-- REBASE MODAL -->
-    <b-modal :active.sync="rebaseModal.active" :on-cancel="() => rebaseModal.active = false" has-modal-card>
+    <b-modal :active.sync="rebaseModal.active" :can-cancel="false" has-modal-card>
       <div class="modal-card" style="max-width: 460px;">
         <section class="modal-card-body">
           Are you sure you want to rebase this image onto a different backing image?<br>
@@ -102,14 +102,14 @@
           <b-checkbox v-model="rebaseModal.unsafe">Change reference only</b-checkbox>
         </section>
         <footer class="modal-card-foot" style="justify-content: flex-end;">
-          <b-button label="Close" @click="() => rebaseModal.active = false" />
+          <b-button label="Cancel" @click="() => rebaseModal.active = false" :disabled="rebaseModal.isWaiting"/>
           <b-button label="OK" type="is-primary" :loading="rebaseModal.isWaiting"
             @click="() => rebaseDisk(detailsModal.disk.fullPath, rebaseModal.dst, rebaseModal.unsafe)" />
         </footer>
       </div>
     </b-modal>
     <!-- COMMIT MODAL -->
-    <b-modal :active.sync="commitModal.active" :on-cancel="() => commitModal.active = false" has-modal-card>
+    <b-modal :active.sync="commitModal.active" :can-cancel="false" has-modal-card>
       <div class="modal-card" style="max-width: 460px;">
         <section class="modal-card-body">
           Are you sure you want to commit the changes in this disk to its parent?<br>
@@ -119,7 +119,7 @@
           </b-field>
         </section>
         <footer class="modal-card-foot" style="justify-content: flex-end;">
-          <b-button label="Close" @click="() => commitModal.active = false" />
+          <b-button label="Cancel" @click="() => commitModal.active = false" :disabled="commitModal.isWaiting"/>
           <b-button label="OK" type="is-primary" :loading="commitModal.isWaiting"
             @click="() => commitDisk(detailsModal.disk.fullPath, commitModal.delete)" />
         </footer>
@@ -128,7 +128,7 @@
     <!-- CONTENT -->
     <template>
       <hr>
-      <b-field grouped position="is-right">
+      <b-field grouped position="is-right" style="margin: 12px 0px;">
         <b-field>
           <b-autocomplete v-model="filterString" placeholder="Find a disk" icon="search"
           @select="option => selected = option" :data="filteredDisks.map(d => d.name)" style="width: 512px;">
@@ -321,6 +321,7 @@ export default {
           type: "text",
           placeholder: "New image name"
         },
+        canCancel: ["button"],
         closeOnConfirm: false,
         onConfirm: (value, dialog) => this.actionWrapper(`disks/snapshot?disk=${path}&new=${value}`, dialog)
       })
@@ -336,6 +337,7 @@ export default {
           type: "text",
           placeholder: "New image name"
         },
+        canCancel: ["button"],
         closeOnConfirm: false,
         onConfirm: (value, dialog) => this.actionWrapper(`disks/clone?disk=${path}&new=${value}`, dialog)
       })
@@ -347,6 +349,7 @@ export default {
           type: "text",
           placeholder: "New name"
         },
+        canCancel: ["button"],
         closeOnConfirm: false,
         onConfirm: (value, dialog) => this.actionWrapper(`disks/rename?disk=${path}&new=${value}`, dialog)
       })
@@ -355,6 +358,7 @@ export default {
       console.log(path)
       this.$buefy.dialog.confirm({
         message: 'Are you sure you want to delete this disk? <b class="has-text-danger">If this disk backs others, they will become invalid</b>',
+        canCancel: ["button"],
         closeOnConfirm: false,
         onConfirm: (_, dialog) => this.actionWrapper(`disks?disk=${path}`, dialog, 'delete')
       })

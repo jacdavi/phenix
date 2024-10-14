@@ -69,6 +69,11 @@
               <b>Clone</b> - Creates a copy of the disk file
             </b-button>
             <hr class="action-separator">
+            <b-button type="is-text" expanded @click="downloadDisk(detailsModal.disk.fullPath)"
+              :disabled="shouldDisableAction('download')">
+              <b>Download</b>
+            </b-button>
+            <hr class="action-separator">
             <b-button type="is-text" expanded @click="renameDisk(detailsModal.disk.fullPath)"
               :disabled="shouldDisableAction('rename')">
               <b>Rename</b>
@@ -77,11 +82,6 @@
             <b-button type="is-text" expanded @click="deleteDisk(detailsModal.disk.fullPath)"
               :disabled="shouldDisableAction('delete')">
               <b>Delete</b>
-            </b-button>
-            <hr class="action-separator">
-            <b-button type="is-text" expanded @click="downloadDisk(detailsModal.disk.fullPath)"
-              :disabled="shouldDisableAction('download')">
-              <b>Download</b>
             </b-button>
           </div>
         </section>
@@ -97,7 +97,9 @@
           Selecting "Change Reference Only" will only change the backing image name without updating files.
           <b-select placeholder="New Backing Image" v-model="rebaseModal.dst" style="margin-bottom: 8px; margin-top: 16px;">
             <option value="">None</option>
-            <option v-for="d in disks" :value="d.fullPath">{{ d.name }}</option>
+            <template v-for="d in disks">
+              <option v-if="d !== detailsModal.disk" :value="d.fullPath">{{ d.name }}</option>
+            </template>
           </b-select>
           <b-checkbox v-model="rebaseModal.unsafe">Change reference only</b-checkbox>
         </section>
@@ -113,7 +115,7 @@
       <div class="modal-card" style="max-width: 460px;">
         <section class="modal-card-body">
           Are you sure you want to commit the changes in this disk to its parent?<br>
-          By default this disk is left unchanged, but you may select to delete if it's no longer needed.
+          By default this disk is left unchanged, but you may select to delete it if it's no longer needed.
           <b-field style="margin-top: 16px;">
             <b-checkbox v-model="commitModal.delete">Delete this disk after commit</b-checkbox>
           </b-field>

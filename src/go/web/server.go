@@ -229,6 +229,7 @@ func Start(opts ...ServerOption) error {
 	api.HandleFunc("/disks", GetDisks).Methods("GET", "OPTIONS")
 	api.HandleFunc("/disks/snapshot", SnapshotDisk).Methods("POST", "OPTIONS").Queries("disk", "{disk}", "new", "{new}")
 	api.HandleFunc("/disks/rebase", RebaseDisk).Methods("POST", "OPTIONS").Queries("disk", "{disk}", "backing", "{backing}", "unsafe", "{unsafe}")
+	api.HandleFunc("/disks/resize", ResizeDisk).Methods("POST", "OPTIONS").Queries("disk", "{disk}", "size", "{size}")
 	api.HandleFunc("/disks/commit", CommitDisk).Methods("POST", "OPTIONS").Queries("disk", "{disk}")
 	api.HandleFunc("/disks/clone", CloneDisk).Methods("POST", "OPTIONS").Queries("disk", "{disk}", "new", "{new}")
 	api.HandleFunc("/disks", DeleteDisk).Methods("DELETE", "OPTIONS").Queries("disk", "{disk}")

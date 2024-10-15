@@ -22,6 +22,10 @@ type DiskFiles interface {
 	// when `unsafe` is true, will only change the reference to the backing file rather than actually moving contents
 	// dst can be left blank to make `src` into an independent image
 	RebaseDisk(src, dst string, unsafe bool) error
+	// resizes the specified disk.
+	// size is suffixed with one of "K,M,G,T,P,E" and can be absolute or relative with a +/-
+	// for example: "50G" or "-500M"
+	ResizeDisk(src, size string) error
 
 	// makes a copy of `src` at `dst`. This is equivalent to a shell `cp`
 	CloneDisk(src, dst string) error
@@ -53,6 +57,10 @@ func SnapshotDisk(src, dst string) error {
 
 func RebaseDisk(src, dst string, unsafe bool) error {
 	return DefaultDiskFiles.RebaseDisk(src, dst, unsafe)
+}
+
+func ResizeDisk(src, size string) error {
+	return DefaultDiskFiles.ResizeDisk(src, size)
 }
 
 func CloneDisk(src, dst string) error {

@@ -69,6 +69,11 @@
               <b>Clone</b> - Creates a copy of the disk file
             </b-button>
             <hr class="action-separator">
+            <b-button type="is-text" expanded @click="resizeDisk(detailsModal.disk.fullPath)"
+              :disabled="shouldDisableAction('resize')">
+              <b>Resize</b>
+            </b-button>
+            <hr class="action-separator">
             <b-button type="is-text" expanded @click="downloadDisk(detailsModal.disk.fullPath)"
               :disabled="shouldDisableAction('download')">
               <b>Download</b>
@@ -273,6 +278,7 @@ export default {
         case "delete":
           return disk.inUse || !this.roleAllowed('disks', 'delete', disk.name)
         case "rename":
+        case "resize":
           return disk.inUse || !this.roleAllowed('disks', 'update', disk.name)
         case "clone":
           return !this.roleAllowed('disks', 'create')
@@ -331,6 +337,19 @@ export default {
     rebaseDisk(path, dst, unsafe) {
       this.rebaseModal.isWaiting = true
       this.actionWrapper(`disks/rebase?disk=${path}&backing=${dst}&unsafe=${unsafe}`)
+    },
+    resizeDisk(path) {
+      this.$buefy.dialog.prompt({
+        message: "Are you sure you want to resize this disk? The size must end with one of 'K,M,G,T,P,E' and may be relative by prefixing with +/- (e.g., '50G' or '-512M')",
+        inputAttrs: {
+          type: "text",
+          placeholder: "New size",
+          pattern: "[+-]?\d+[KMGTPE]"
+        },
+        canCancel: ["button"],
+        closeOnConfirm: false,
+        onConfirm: (value, dialog) => this.actionWrapper(`disks/resize?disk=${path}&size=${encodeURIComponent(value)}`, dialog)
+      })
     },
     cloneDisk(path) {
       this.$buefy.dialog.prompt({

@@ -43,6 +43,13 @@ func (MMDiskFiles) RebaseDisk(src, dst string, unsafe bool) error {
 	return err
 }
 
+func (MMDiskFiles) ResizeDisk(src, size string) error {
+	cmd := mmcli.NewCommand()
+	cmd.Command = fmt.Sprintf("disk resize %s %s", src, size)
+	_, err := mmcli.SingleDataResponse(mmcli.Run(cmd))
+	return err
+}
+
 func (MMDiskFiles) CloneDisk(src, dst string) error {
 	cmd := mmcli.NewCommand()
 	cmd.Command = fmt.Sprintf("shell cp %s %s", src, dst)

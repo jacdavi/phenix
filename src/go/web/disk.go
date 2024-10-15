@@ -168,6 +168,28 @@ func RebaseDisk(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// POST /disks/resize?disk={disk}&size={size}
+// disk should be absolute. size should be a valid size (absolute or relative) per `qemu-img --help`
+func ResizeDisk(w http.ResponseWriter, r *http.Request) {
+	role := r.Context().Value("role").(rbac.Role)
+	path := mux.Vars(r)["disk"]
+	size := mux.Vars(r)["size"]
+
+	if !role.Allowed("disks", "update", filepath.Base(path)) {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	err := disk.ResizeDisk(path, size)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 // POST /disks/clone?disk={disk}&new={new}
 // disk should be absolute
 // new may be absolute, but will be put in same dir as disk if not. Extension will be set to qcow2

@@ -41,7 +41,7 @@
               <b>{{ detailsModal.disk.name }}</b>
               <div v-for="i in detailsModal.disk.backingImages">
                 &darr;<br>
-                <a @click="detailsModal.disk = disks.find(d => d.name==i)" >{{  i  }}</a>
+                <a @click="detailsModal.disk = disks.find(d => d.name == i)">{{ i }}</a>
               </div>
             </div>
           </div>
@@ -100,7 +100,8 @@
           By default changes between the old and new backing images will be written to this image.
           Selecting "None" for the backing image will cause the image to become independent.<br>
           Selecting "Change Reference Only" will only change the backing image name without updating files.
-          <b-select placeholder="New Backing Image" v-model="rebaseModal.dst" style="margin-bottom: 8px; margin-top: 16px;">
+          <b-select placeholder="New Backing Image" v-model="rebaseModal.dst"
+            style="margin-bottom: 8px; margin-top: 16px;">
             <option value="">None</option>
             <template v-for="d in disks">
               <option v-if="d !== detailsModal.disk" :value="d.fullPath">{{ d.name }}</option>
@@ -109,7 +110,7 @@
           <b-checkbox v-model="rebaseModal.unsafe">Change reference only</b-checkbox>
         </section>
         <footer class="modal-card-foot" style="justify-content: flex-end;">
-          <b-button label="Cancel" @click="() => rebaseModal.active = false" :disabled="rebaseModal.isWaiting"/>
+          <b-button label="Cancel" @click="() => rebaseModal.active = false" :disabled="rebaseModal.isWaiting" />
           <b-button label="OK" type="is-primary" :loading="rebaseModal.isWaiting"
             @click="() => rebaseDisk(detailsModal.disk.fullPath, rebaseModal.dst, rebaseModal.unsafe)" />
         </footer>
@@ -126,7 +127,7 @@
           </b-field>
         </section>
         <footer class="modal-card-foot" style="justify-content: flex-end;">
-          <b-button label="Cancel" @click="() => commitModal.active = false" :disabled="commitModal.isWaiting"/>
+          <b-button label="Cancel" @click="() => commitModal.active = false" :disabled="commitModal.isWaiting" />
           <b-button label="OK" type="is-primary" :loading="commitModal.isWaiting"
             @click="() => commitDisk(detailsModal.disk.fullPath, commitModal.delete)" />
         </footer>
@@ -138,7 +139,7 @@
       <b-field grouped position="is-right" style="margin: 12px 0px;">
         <b-field>
           <b-autocomplete v-model="filterString" placeholder="Find a disk" icon="search"
-          @select="option => selected = option" :data="filteredDisks.map(d => d.name)" style="width: 512px;">
+            @select="option => selected = option" :data="filteredDisks.map(d => d.name)" style="width: 512px;">
           </b-autocomplete>
           <p class='control'>
             <button class='button' style="color:#686868" @click="filterString = ''">
@@ -146,14 +147,13 @@
             </button>
           </p>
         </b-field>
-
         <b-tooltip label="Refresh List" type="is-light is-left">
           <button class="button is-light" @click="updateDisks">
             <b-icon icon="refresh"></b-icon>
           </button>
         </b-tooltip>
         <b-tooltip v-if="roleAllowed('disks', 'upload')" label="Upload a disk" type="is-light is-left">
-          <b-upload class="file-label" style="margin-left: 8px;" @input="uploadDisk"
+          <b-upload class="file-label" style="margin-left: 8px;" @input="uploadDisk" accept=".qcow2,.qc2,.tgz,.hdd,.iso"
             :disabled="currentUploadProgress != null">
             <span class="file-cta">
               <b-icon v-if="currentUploadProgress == null" icon="upload"></b-icon>
@@ -288,7 +288,7 @@ export default {
           return false
       }
     },
-    actionWrapper(httpPath, dialog=null, method='post') {
+    actionWrapper(httpPath, dialog = null, method = 'post') {
       console.log(dialog)
       if (dialog != null) {
         dialog.startLoading()
@@ -410,13 +410,13 @@ export default {
     },
     // converts a human-readable string in IEC format to a byte count
     toByteCount(s) {
-        const units = "KMGTPE"
-        const base = s.match(/[/.0-9]*/)
-        const unit = s[s.indexOf(" ") + 1]
-        if (unit == "B") {
-          return parseFloat(base)
-        }
-        return parseFloat(base) * Math.pow(1024, units.indexOf(unit))
+      const units = "KMGTPE"
+      const base = s.match(/[/.0-9]*/)
+      const unit = s[s.indexOf(" ") + 1]
+      if (unit == "B") {
+        return parseFloat(base)
+      }
+      return parseFloat(base) * Math.pow(1024, units.indexOf(unit))
     },
     sortBySize(diskA, diskB, isAsc) {
       return (this.toByteCount(diskA.size) - this.toByteCount(diskB.size)) * (isAsc ? 1 : -1)
@@ -463,7 +463,8 @@ export default {
   white-space: pre !important;
 }
 
-.modal-card-body, .modal-card-body a {
+.modal-card-body,
+.modal-card-body a {
   color: black !important;
 }
 

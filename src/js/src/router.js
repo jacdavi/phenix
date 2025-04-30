@@ -40,7 +40,7 @@ const router = new Router({
     {path: '/configs',           name: 'configs',     component: Configs},
     {path: '/disabled',          name: 'disabled',    component: Disabled},
     {path: '/experiments',       name: 'experiments', component: Experiments},
-    {path: '/experiment/:id',    name: 'experiment',  component: Experiment},
+    {path: '/experiment/:id',    name: 'experiment',  component: Experiment, props: true},
     {path: '/hosts',             name: 'hosts',       component: Hosts},
     {path: '/log',               name: 'log',         component: Log},
     {path: '/scorch/:id',        name: 'scorchruns',  component: ScorchRuns},

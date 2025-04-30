@@ -22,23 +22,6 @@ this will only show a list of VMs that a user can view.
       vmtiles: () => import( './VMtiles.vue' )
     },
 
-    async beforeRouteEnter ( to, _, next ) {
-      try {
-        let resp = await Vue.http.get( 'experiments/' + to.params.id );
-        let state = await resp.json();
-
-        next( exp => exp.running = state.running );
-      } catch ( err ) { // TODO: do we want to set this as an error?
-        Vue.toast.open({
-          message: 'Getting the ' + to.params.id + ' experiment failed.',
-          type: 'is-danger',
-          duration: 4000
-        });
-
-        next();
-      }
-    },
-
     //  This computed value is based on the routing parameter 
     //  determined by the user clicking into an experiment from the 
     //  experiments component; or, based on the role type. The result 
@@ -49,23 +32,19 @@ this will only show a list of VMs that a user can view.
         if ( this.running == null ) {
           return
         }
-
+        
         if ( this.running == true ) {
           if ( this.$store.getters.role === "VM Viewer" ) {
             return 'vmtiles';
           }
-
           return 'running';
         }
-
         return 'stopped';
       }
     },
     
-    data () {
-      return {
-        running: null
-      }
+    props: {
+      running: Boolean
     }
   }
 </script>

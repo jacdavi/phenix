@@ -143,7 +143,7 @@
               {{ props.row.name }}
             </template>
             <template v-else>
-              <router-link class="navbar-item" :to="{ name: 'experiment', params: { id: props.row.name }}">
+              <router-link class="navbar-item" :to="{ name: 'experiment', params: { id: props.row.name, running: props.row.running }}">
                 {{ props.row.name }}
               </router-link>
             </template>

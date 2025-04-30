@@ -184,7 +184,7 @@
             {{ props.row.vm_count }}
           </b-table-column>
           <b-table-column field="vlan_range" label="VLANs" width="100" centered v-slot="props">
-            {{ props.row.vlan_min }} - {{ props.row.vlan_max}} ({{ props.row.vlan_count }})
+            {{ props.row.vlan_min }} - {{ props.row.vlan_max}} ({{ props.row.vlans.length }})
           </b-table-column>
           <b-table-column label="Actions" width="150" centered v-slot="props">
             <button v-if="roleAllowed('experiments', 'delete', props.row.name)" class="button is-light is-small action" :disabled="updating( props.row.status )" @click="del( props.row.name, props.row.running )">

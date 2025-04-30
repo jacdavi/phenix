@@ -19,7 +19,7 @@ func ExperimentToProtobuf(exp types.Experiment, status cache.Status, vms []mm.VM
 		StartTime: exp.Status.StartTime(),
 		Running:   exp.Running(),
 		Status:    string(status),
-		VmCount:   uint32(len(vms)),
+		VmCount:   uint32(len(exp.Spec.Topology().Nodes())),
 	}
 
 	pb.Vms = make([]*proto.VM, len(vms))
@@ -31,6 +31,7 @@ func ExperimentToProtobuf(exp types.Experiment, status cache.Status, vms []mm.VM
 			pb.DelayedVms++
 		}
 	}
+	
 
 	var apps []string
 

@@ -43,6 +43,7 @@ func Count(expName string) (int, error) {
 // experiment is running. It returns a slice of VM structs and any errors
 // encountered while gathering them.
 func List(expName string) ([]mm.VM, error) {
+	s := time.Now()
 	if expName == "" {
 		return nil, fmt.Errorf("no experiment name provided")
 	}
@@ -159,7 +160,7 @@ func List(expName string) ([]mm.VM, error) {
 
 		vms = append(vms, vm)
 	}
-
+	plog.Info("LIST VMS", "t", time.Since(s))
 	return vms, nil
 }
 

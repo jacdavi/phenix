@@ -637,7 +637,7 @@
           response => {
             response.json().then( state => {
               this.experiment = state;
-              this.table.total = state.vm_count;
+              this.table.total = state.vms.length;
               
               this.vlanModal.vlans = this.experiment.vlans.map( vlan => { return vlan; } );
 

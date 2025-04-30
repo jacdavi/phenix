@@ -24,14 +24,14 @@ message Experiment {
 	repeated VM vms = 12;
 	repeated string apps = 13;
 
-	// TODO: depricate
-	uint32 vlan_count = 14 [json_name="vlan_count"];
+	//reflects # vms defined in experiment; not number booted or number present in vms field above
 	uint32 vm_count = 15 [json_name="vm_count"];
 
 	uint32 delayed_vms = 20 [json_name="delayed_vms"];
 }
 
 message ExperimentList {
+	// note: experiments will not have vms field populated
 	repeated Experiment experiments = 1;
 }
 

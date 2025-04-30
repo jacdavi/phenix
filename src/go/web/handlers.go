@@ -63,8 +63,6 @@ func GetExperiments(w http.ResponseWriter, r *http.Request) {
 	var (
 		ctx   = r.Context()
 		role  = ctx.Value("role").(rbac.Role)
-		query = r.URL.Query()
-		size  = query.Get("screenshot")
 	)
 
 	if !role.Allowed("experiments", "list") {
@@ -97,32 +95,7 @@ func GetExperiments(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		// TODO: limit per-experiment VMs based on RBAC
-
-		vms, err := vm.List(exp.Spec.ExperimentName())
-		if err != nil {
-			// TODO
-		}
-
-		if exp.Running() && size != "" {
-			for i, v := range vms {
-				if !v.Running {
-					continue
-				}
-
-				screenshot, err := util.GetScreenshot(exp.Spec.ExperimentName(), v.Name, size)
-				if err != nil {
-					plog.Error("getting screenshot", "err", err)
-					continue
-				}
-
-				v.Screenshot = "data:image/png;base64," + base64.StdEncoding.EncodeToString(screenshot)
-
-				vms[i] = v
-			}
-		}
-
-		allowed = append(allowed, util.ExperimentToProtobuf(exp, status, vms))
+		allowed = append(allowed, util.ExperimentToProtobuf(exp, status, nil))
 	}
 
 	body, err := marshaler.Marshal(&proto.ExperimentList{Experiments: allowed})

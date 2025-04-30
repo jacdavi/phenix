@@ -974,7 +974,7 @@
 
         if ( !this.table.isPaginated ) {
           number  = 0;
-          size  = this.experiment.vm_count;
+          size  = this.experiment.vms.length;
         }
 
         let msg = {
@@ -1081,7 +1081,7 @@
                 this.searchHistory = this.getUniqueItems(this.searchHistory)
               }
             } else {
-              this.table.total  = this.experiment.vm_count;
+              this.table.total  = this.experiment.vms.length;
             }
 
             this.isWaiting = false;
@@ -1553,7 +1553,7 @@
 
           this.experiment  = state;
           this.search.vms  = state.vms.map( vm => { return vm.name } );
-          this.table.total = state.vm_count;          
+          this.table.total = state.vms.length;          
 
           this.updateTable(); 
         } catch (err) {

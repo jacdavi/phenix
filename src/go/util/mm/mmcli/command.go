@@ -19,13 +19,13 @@ type Command struct {
 
 // NewCommand returns a pointer to a new, initialized command.
 func NewCommand() *Command {
-	return new(Command)
+	return &Command{Timeout: time.Minute}
 }
 
 // NewNamespacedCommand returns a pointer to a new command, initialized with the
 // given minimega namespace name.
 func NewNamespacedCommand(ns string) *Command {
-	return &Command{Namespace: ns}
+	return &Command{Namespace: ns, Timeout: time.Minute}
 }
 
 // String builds the actual command string to send to minimega using the command

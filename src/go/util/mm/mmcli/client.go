@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"phenix/util/common"
+	"phenix/util/plog"
+
 
 	"github.com/activeshadow/libminimega/minicli"
 	"github.com/activeshadow/libminimega/miniclient"
@@ -146,7 +148,11 @@ func SingleDataResponse(responses chan *miniclient.Response) (interface{}, error
 // redialing if disconnected. Any errors encountered will be returned as part of
 // the response channel.
 func Run(c *Command) chan *miniclient.Response {
+	plog.Info("Run command", "c", c.String())
 	mu.Lock()
+	plog.Info("got lock", "c", c.String())
+	defer plog.Info("unlocking", "c", c.String())
+
 	defer mu.Unlock()
 
 	var err error
@@ -190,6 +196,7 @@ func Run(c *Command) chan *miniclient.Response {
 		return resp
 	case <-time.After(c.Timeout):
 		// Reset mm since the miniclient has a lock that is likely still activated.
+		plog.Warn("minimega call timed out", "command", c.String())
 		mm = nil
 		return wrapErr(ErrTimeout)
 	}

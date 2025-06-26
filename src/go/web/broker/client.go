@@ -146,12 +146,12 @@ func (this *Client) read() {
 			case "metadata/screenshot":
 				var payload map[string]string
 				if err := json.Unmarshal(req.Payload, &payload); err != nil {
-					plog.Error("cannot unmarshal WebSocket request payload JSON", "err", err)
+					plog.Error(plog.TypeSystem, "cannot unmarshal WebSocket request payload JSON", "err", err)
 					continue
 				}
 				size, ok := payload["size"]
 				if ok {
-					plog.Debug("updated screenshot resolution", "size", size)
+					plog.Debug(plog.TypeSystem, "updated screenshot resolution", "size", size)
 					screenshotSize = size
 					this.updateScreenshots()
 				}

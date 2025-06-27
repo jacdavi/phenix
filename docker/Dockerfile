@@ -2,7 +2,7 @@
 # required for use with phenix. This build stage is needed for making sure the
 # latest version of the minimega Python module is installed.
 ARG  MM_MIN_REV=6cf6cfb
-FROM ghcr.io/activeshadow/minimega/minimega:${MM_MIN_REV} AS minimega
+FROM ghcr.io/sandia-minimega/minimega:${MM_MIN_REV} AS minimega
 
 
 # ** jsbuilder **

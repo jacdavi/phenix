@@ -2,6 +2,8 @@ name: Publish minimega Docker image
 on:
   push:
     branches: ['**']
+env:
+  MM_REV: 6cf6cfb
 jobs:
   push-to-ghcr:
     name: Push minimega Docker image to GitHub Packages
@@ -22,6 +24,15 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ghcr.io/${{ github.repository }}/minimega
+          tags: |
+            type=sha
+            type=ref,event=branch
+            type=raw,value=${{ env.MM_REV }}
       - name: Build container image
         uses: docker/build-push-action@v3
         with:
@@ -31,7 +42,4 @@ jobs:
             MM_REV=6cf6cfb
             PHENIX_REVISION=${{ env.sha }}
           push: true
-          tags: |
-            ghcr.io/${{ github.repository }}/minimega:6cf6cfb
-            ghcr.io/${{ github.repository }}/minimega:${{ env.sha }}
-            ghcr.io/${{ github.repository }}/minimega:${{ env.branch }}
+          tags: ${{ steps.meta.output.tags }}

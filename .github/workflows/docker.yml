@@ -4,6 +4,8 @@ on:
     branches: ['**']
   repository_dispatch:
     types: [apps-update]
+env:
+  MM_REV: 6cf6cfb
 jobs:
   push-to-ghcr:
     name: Push phenix Docker image to GitHub Packages
@@ -24,20 +26,27 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ghcr.io/${{ github.repository }}/phenix
+          tags: |
+            type=sha
+            type=ref,event=branch
       - name: Build container image
         uses: docker/build-push-action@v3
         with:
           context: .
           file: docker/Dockerfile
           build-args: |
-            MM_MIN_REV=6cf6cfb
+            MM_MIN_REV=${{ env.MM_REV }}
             PHENIX_COMMIT=${{ env.sha }}
             PHENIX_TAG=${{ env.branch }}
             APPS_REPO=github.com/${{ github.event_name == 'repository_dispatch' && github.event.client_payload.repo || 'sandialabs/sceptre-phenix-apps' }}
           push: true
-          tags: |
-            ghcr.io/${{ github.repository }}/phenix:${{ env.sha }}
-            ghcr.io/${{ github.repository }}/phenix:${{ env.branch }}
+          tags: ${{ steps.meta.output.tags }}
+
   push-jit-to-ghcr:
     name: Push phenix JIT Docker image to GitHub Packages
     runs-on: ubuntu-latest
@@ -58,6 +67,14 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ghcr.io/${{ github.repository }}/phenix
+          tags: |
+            type=sha
+            type=ref,event=branch
       - name: Build container image
         uses: docker/build-push-action@v3
         with:
@@ -67,6 +84,4 @@ jobs:
             PHENIX_REPO=${{ github.repository }}
             PHENIX_TAG=${{ env.branch }}
           push: true
-          tags: |
-            ghcr.io/${{ github.repository }}/phenix-jit-ui:${{ env.sha }}
-            ghcr.io/${{ github.repository }}/phenix-jit-ui:${{ env.branch }}
+          tags: ${{ steps.meta.output.tags }}

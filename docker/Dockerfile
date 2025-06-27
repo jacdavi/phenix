@@ -1,7 +1,7 @@
 # Update GitHub workflow config to change the minimum version of minimega
 # required for use with phenix. This build stage is needed for making sure the
 # latest version of the minimega Python module is installed.
-ARG  MM_MIN_REV=9f867b3
+ARG  MM_MIN_REV=6cf6cfb
 FROM ghcr.io/activeshadow/minimega/minimega:${MM_MIN_REV} AS minimega
 
 
